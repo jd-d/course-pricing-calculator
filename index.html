@@ -2043,6 +2043,20 @@
                 <input type="number" id="variable-cost-student" value="0" min="0" step="0.01" inputmode="decimal" />
               </div>
               <div class="control">
+                <label for="variable-cost-student-monthly">
+                  <span class="label-text">Variable monthly cost per student</span>
+                  <span
+                    class="info-icon"
+                    tabindex="0"
+                    role="button"
+                    aria-expanded="false"
+                    aria-label="Monthly expenses applied per student and scaled by class size (e.g. software licences)."
+                    data-tooltip="Monthly expenses applied per student and scaled by class size (e.g. software licences)."
+                  >ℹ️</span>
+                </label>
+                <input type="number" id="variable-cost-student-monthly" value="0" min="0" step="0.01" inputmode="decimal" />
+              </div>
+              <div class="control">
                 <label for="vat-rate">
                   <span class="label-text">VAT rate (%)</span>
                   <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Modify if the services you offer fall into a lower VAT band." data-tooltip="Modify if the services you offer fall into a lower VAT band.">ℹ️</span>
@@ -2934,6 +2948,7 @@
       fixedCosts: document.getElementById('fixed-costs'),
       variableCostPerClass: document.getElementById('variable-cost-class'),
       variableCostPerStudent: document.getElementById('variable-cost-student'),
+      variableCostPerStudentMonthly: document.getElementById('variable-cost-student-monthly'),
       vatRate: document.getElementById('vat-rate'),
       classesPerWeek: document.getElementById('classes-per-week'),
       studentsPerClass: document.getElementById('students-per-class'),
@@ -3537,6 +3552,7 @@
       const fixedCosts = updateFixedCostTotalDisplay();
       const variableCostPerClass = Math.max(parseNumber(controls.variableCostPerClass.value, 0), 0);
       const variableCostPerStudent = Math.max(parseNumber(controls.variableCostPerStudent.value, 0), 0);
+      const variableCostPerStudentMonthly = Math.max(parseNumber(controls.variableCostPerStudentMonthly.value, 0), 0);
       const vatRate = Math.max(parseNumber(controls.vatRate.value, 21), 0) / 100;
       const classesPerWeek = parseList(controls.classesPerWeek.value);
       const studentsPerClass = parseList(controls.studentsPerClass.value);
@@ -3638,6 +3654,9 @@
       if (controls.variableCostPerStudent instanceof HTMLInputElement) {
         controls.variableCostPerStudent.value = formatFixed(variableCostPerStudent, 2);
       }
+      if (controls.variableCostPerStudentMonthly instanceof HTMLInputElement) {
+        controls.variableCostPerStudentMonthly.value = formatFixed(variableCostPerStudentMonthly, 2);
+      }
       controls.vatRate.value = formatFixed(vatRate * 100, 1);
       controls.monthsOff.value = formatFixed(monthsOff, 2);
       controls.weeksOffCycle.value = formatFixed(weeksOffPerCycle, 2);
@@ -3665,6 +3684,7 @@
         fixedCosts,
         variableCostPerClass,
         variableCostPerStudent,
+        variableCostPerStudentMonthly,
         vatRate,
         classesPerWeek,
         studentsPerClass,
@@ -4193,6 +4213,7 @@
         fixedCosts,
         variableCostPerClass,
         variableCostPerStudent,
+        variableCostPerStudentMonthly,
         vatRate,
         classesPerWeek,
         studentsPerClass,
@@ -4230,6 +4251,8 @@
       const sortedStudents = [...studentsPerClass];
       sortedStudents.sort((a, b) => a - b);
 
+      const normalizedActiveMonths = Number.isFinite(activeMonths) && activeMonths > 0 ? activeMonths : 0;
+
       const columnsMeta = classesPerWeek.map(classes => {
         const classesPerYear = classes * workingWeeks;
         return { classesPerWeek: classes, classesPerYear };
@@ -4244,7 +4267,10 @@
         const fixedAllocationPerLesson = actualClassesPerYear > 0 ? fixedCosts / actualClassesPerYear : 0;
         const vatPerStudent = normalizedPriceInclVat - normalizedPriceExVat;
         const vatPerLesson = vatPerStudent * actualStudents;
-        const variableCostsPerLesson = variableCostPerClass + variableCostPerStudent * actualStudents;
+        const monthlyCostTotal = variableCostPerStudentMonthly * actualStudents * normalizedActiveMonths;
+        const monthlyCostPerLesson = actualClassesPerYear > 0 ? monthlyCostTotal / actualClassesPerYear : 0;
+        const variableCostsPerLesson =
+          variableCostPerClass + variableCostPerStudent * actualStudents + monthlyCostPerLesson;
         const revenueExVatPerLesson = normalizedPriceExVat * actualStudents;
         const profitBeforeTaxPerLesson = revenueExVatPerLesson - variableCostsPerLesson - fixedAllocationPerLesson;
         const incomeTaxPerLesson = profitBeforeTaxPerLesson > 0 ? profitBeforeTaxPerLesson * effectiveTaxRate : 0;
@@ -4292,7 +4318,8 @@
             const bufferedRevenue = annualRevenue * attendanceMultiplier;
             const annualVariableCosts =
               variableCostPerClass * classesPerYear +
-              variableCostPerStudent * students * classesPerYear;
+              variableCostPerStudent * students * classesPerYear +
+              variableCostPerStudentMonthly * students * normalizedActiveMonths;
 
             const annualNet = computeNetIncomeFromRevenue(
               annualRevenue,
@@ -4394,7 +4421,8 @@
           const effectiveClassesPerYear = Math.max(classesPerYear, 1);
           const annualVariableCosts =
             variableCostPerClass * classesPerYear +
-            variableCostPerStudent * students * classesPerYear;
+            variableCostPerStudent * students * classesPerYear +
+            variableCostPerStudentMonthly * students * normalizedActiveMonths;
           const revenueNeededForCombo = revenueNeeded + annualVariableCosts;
           const revenuePerClass = revenueNeededForCombo / effectiveClassesPerYear;
           const priceExVat = revenuePerClass / Math.max(students, 1);
@@ -4569,6 +4597,7 @@
         fixedCosts,
         variableCostPerClass,
         variableCostPerStudent,
+        variableCostPerStudentMonthly,
         vatRate,
         classesPerWeek,
         studentsPerClass,
@@ -4618,6 +4647,7 @@
         `Fixed annual costs: ${formatCurrency(currencySymbol, fixedCosts)}`,
         `Variable cost per class: ${formatCurrency(currencySymbol, variableCostPerClass)} (per scheduled class)`,
         `Variable cost per student: ${formatCurrency(currencySymbol, variableCostPerStudent)} (per student per class)`,
+        `Variable monthly cost per student: ${formatCurrency(currencySymbol, variableCostPerStudentMonthly)} (multiplied by class size each active month)`,
         `Months off per year: ${formatFixed(monthsOff, 2)} (≈ ${formatFixed(activeMonths, 2)} active months; ${formatFixed(activeMonthPercentage, 1)}% of the year)`,
         `Weeks off per 4-week cycle: ${formatFixed(weeksOffPerCycle, 2)} (≈ ${formatFixed(workingWeeksPerCycle, 2)} working weeks each cycle; ${formatFixed(activeWeeksPercentage, 1)}% active weeks)`,
         `Days off per week: ${formatFixed(daysOffPerWeek, 2)} (≈ ${formatFixed(workingDaysPerWeek, 2)} working days when active)`,
