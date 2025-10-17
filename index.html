@@ -77,6 +77,7 @@
       --inactive-strong: #ffb7c3;
       --active-bg: rgba(77, 163, 255, 0.12);
       --active-border: rgba(77, 163, 255, 0.45);
+      --price-out-of-range: #ff7b7b;
     }
 
     body[data-theme="light"] {
@@ -143,6 +144,7 @@
       --inactive-strong: #e53e3e;
       --active-bg: rgba(37, 99, 235, 0.12);
       --active-border: rgba(37, 99, 235, 0.35);
+      --price-out-of-range: #b91c1c;
     }
 
     * {
@@ -197,6 +199,7 @@
     .top-nav {
       display: flex;
       justify-content: flex-end;
+      gap: 12px;
       padding: 8px 0 0;
     }
 
@@ -979,12 +982,47 @@
       gap: 6px;
     }
 
-    .control--fixed-costs {
+    .control.control-panel {
       gap: 12px;
       padding: 16px;
       border-radius: 14px;
       border: 1px solid var(--field-border);
       background: var(--field-output-bg);
+    }
+
+    .control--nested {
+      gap: 6px;
+    }
+
+    .control--fixed-costs {
+      gap: 12px;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .inline-field-pair {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      align-items: end;
+    }
+
+    .inline-field-pair label {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.85rem;
+    }
+
+    .panel-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
     }
 
     .fixed-costs-header {
@@ -1014,7 +1052,7 @@
 
     .fixed-cost-inputs {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      grid-template-columns: repeat(2, minmax(140px, 1fr));
       gap: 12px;
       flex: 2 1 280px;
     }
@@ -1040,21 +1078,6 @@
       gap: 6px;
       padding-top: 8px;
       border-top: 1px solid var(--field-border);
-    }
-
-    .fixed-cost-resources {
-      margin: 4px 0 0;
-      padding-left: 20px;
-      color: var(--text-muted);
-      font-size: 0.85rem;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .fixed-cost-resources a {
-      color: inherit;
-      text-decoration: underline;
     }
 
     .fixed-cost-total input[readonly] {
@@ -1425,6 +1448,14 @@
       color: var(--text-muted);
     }
 
+    .price-value--out-of-range {
+      color: var(--price-out-of-range) !important;
+    }
+
+    .price-line--out-of-range .price-secondary {
+      color: var(--price-out-of-range) !important;
+    }
+
     .price-line.buffered {
       background: var(--price-buffer-bg);
       border-color: var(--price-buffer-border);
@@ -1634,6 +1665,7 @@
 <body data-theme="dark">
   <div class="page">
     <nav class="top-nav">
+      <a href="resources.html" class="top-link">Helpful Resources</a>
       <a href="#" id="how-to-link" class="top-link">How To Use This Tool</a>
     </nav>
     <header>
@@ -1865,12 +1897,44 @@
               </button>
             </div>
             <div class="section-body" id="section-taxes-costs">
-              <div class="control">
-                <label for="tax-rate">
-                  <span class="label-text">Effective income tax rate (%)</span>
-                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Share of profit paid in taxes and social charges." data-tooltip="Share of profit paid in taxes and social charges.">ℹ️</span>
-                </label>
-                <input type="number" id="tax-rate" value="40" min="0" max="99" step="1" inputmode="decimal" />
+              <div
+                class="control control-panel control--taxes"
+                role="group"
+                aria-labelledby="taxes-group-label"
+              >
+                <div class="panel-header" id="taxes-group-label">
+                  <span class="label-text">Tax rates</span>
+                </div>
+                <div class="inline-field-pair">
+                  <div class="control control--nested">
+                    <label for="tax-rate">
+                      <span class="label-text">Effective income tax rate (%)</span>
+                      <span
+                        class="info-icon"
+                        tabindex="0"
+                        role="button"
+                        aria-expanded="false"
+                        aria-label="Share of profit paid in taxes and social charges."
+                        data-tooltip="Share of profit paid in taxes and social charges."
+                      >ℹ️</span>
+                    </label>
+                    <input type="number" id="tax-rate" value="40" min="0" max="99" step="1" inputmode="decimal" />
+                  </div>
+                  <div class="control control--nested">
+                    <label for="vat-rate">
+                      <span class="label-text">VAT/ BTW (%)</span>
+                      <span
+                        class="info-icon"
+                        tabindex="0"
+                        role="button"
+                        aria-expanded="false"
+                        aria-label="Modify if the services you offer fall into a lower VAT band."
+                        data-tooltip="Modify if the services you offer fall into a lower VAT band."
+                      >ℹ️</span>
+                    </label>
+                    <input type="number" id="vat-rate" value="21" min="0" step="0.1" inputmode="decimal" />
+                  </div>
+                </div>
               </div>
               <div class="control control--fixed-costs">
                 <div class="fixed-costs-header">
@@ -2006,20 +2070,9 @@
                     </div>
                   </div>
                 </div>
-                <ul class="fixed-cost-resources">
-                  <li>
-                    <a href="https://www.kvk.nl/financiering/bereken-uw-uurtarief-als-zzper/" target="_blank" rel="noreferrer noopener">KVK on calculating your ZZP hourly rate</a> – overview of common Dutch freelancer expenses.
-                  </li>
-                  <li>
-                    <a href="https://www.independer.nl/pensioen/zelfstandig/pensioen-zzp.aspx" target="_blank" rel="noreferrer noopener">Independer pension comparison for ZZP’ers</a> – compare third pillar pension products.
-                  </li>
-                  <li>
-                    <a href="https://www.zzp-nederland.nl/verzekeringen/arbeidsongeschiktheidsverzekering" target="_blank" rel="noreferrer noopener">ZZP Nederland on AOV insurance</a> – explains coverage options and premiums.
-                  </li>
-                  <li>
-                    <a href="https://www.zorgwijzer.nl/zorgverzekering/zzp" target="_blank" rel="noreferrer noopener">Zorgwijzer health insurance guide for ZZP’ers</a> – compares zorgverzekeringen with business deductions in mind.
-                  </li>
-                </ul>
+                <p class="field-note">
+                  Need benchmarks? Visit the <a href="resources.html">helpful resources</a> page.
+                </p>
                 <div class="fixed-cost-total">
                   <label for="fixed-costs">
                     <span class="label-text">Total fixed annual costs</span>
@@ -2028,40 +2081,58 @@
                   <p class="field-note">Calculated automatically from the breakdown above.</p>
                 </div>
               </div>
-              <div class="control">
-                <label for="variable-cost-class">
-                  <span class="label-text">Variable cost per class</span>
-                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Expenses that apply each time you run a class, such as room hire or transport." data-tooltip="Expenses that apply each time you run a class, such as room hire or transport.">ℹ️</span>
-                </label>
-                <input type="number" id="variable-cost-class" value="0" min="0" step="0.01" inputmode="decimal" />
-              </div>
-              <div class="control">
-                <label for="variable-cost-student">
-                  <span class="label-text">Variable cost per student</span>
-                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Per-student expenses like materials or refreshments." data-tooltip="Per-student expenses like materials or refreshments.">ℹ️</span>
-                </label>
-                <input type="number" id="variable-cost-student" value="0" min="0" step="0.01" inputmode="decimal" />
-              </div>
-              <div class="control">
-                <label for="variable-cost-student-monthly">
-                  <span class="label-text">Variable monthly cost per student</span>
-                  <span
-                    class="info-icon"
-                    tabindex="0"
-                    role="button"
-                    aria-expanded="false"
-                    aria-label="Monthly expenses applied per student and scaled by class size (e.g. software licences)."
-                    data-tooltip="Monthly expenses applied per student and scaled by class size (e.g. software licences)."
-                  >ℹ️</span>
-                </label>
-                <input type="number" id="variable-cost-student-monthly" value="0" min="0" step="0.01" inputmode="decimal" />
-              </div>
-              <div class="control">
-                <label for="vat-rate">
-                  <span class="label-text">VAT rate (%)</span>
-                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Modify if the services you offer fall into a lower VAT band." data-tooltip="Modify if the services you offer fall into a lower VAT band.">ℹ️</span>
-                </label>
-                <input type="number" id="vat-rate" value="21" min="0" step="0.1" inputmode="decimal" />
+              <div
+                class="control control-panel control--variable-costs"
+                role="group"
+                aria-labelledby="variable-costs-label"
+              >
+                <div class="panel-header" id="variable-costs-label">
+                  <span class="label-text">Variable costs</span>
+                </div>
+                <div class="panel-grid">
+                  <div class="control control--nested">
+                    <label for="variable-cost-class">
+                      <span class="label-text">Variable cost per class</span>
+                      <span
+                        class="info-icon"
+                        tabindex="0"
+                        role="button"
+                        aria-expanded="false"
+                        aria-label="Expenses that apply each time you run a class, such as room hire or transport."
+                        data-tooltip="Expenses that apply each time you run a class, such as room hire or transport."
+                      >ℹ️</span>
+                    </label>
+                    <input type="number" id="variable-cost-class" value="0" min="0" step="0.01" inputmode="decimal" />
+                  </div>
+                  <div class="control control--nested">
+                    <label for="variable-cost-student">
+                      <span class="label-text">Variable cost per student</span>
+                      <span
+                        class="info-icon"
+                        tabindex="0"
+                        role="button"
+                        aria-expanded="false"
+                        aria-label="Per-student expenses like materials or refreshments."
+                        data-tooltip="Per-student expenses like materials or refreshments."
+                      >ℹ️</span>
+                    </label>
+                    <input type="number" id="variable-cost-student" value="0" min="0" step="0.01" inputmode="decimal" />
+                  </div>
+                  <div class="control control--nested">
+                    <label for="variable-cost-student-monthly">
+                      <span class="label-text">Variable monthly cost per student</span>
+                      <span
+                        class="info-icon"
+                        tabindex="0"
+                        role="button"
+                        aria-expanded="false"
+                        aria-label="Monthly expenses applied per student and scaled by class size (e.g. software licences)."
+                        data-tooltip="Monthly expenses applied per student and scaled by class size (e.g. software licences)."
+                      >ℹ️</span>
+                    </label>
+                    <input type="number" id="variable-cost-student-monthly" value="0" min="0" step="0.01" inputmode="decimal" />
+                  </div>
+                </div>
               </div>
               <div class="section-footer">
                 <button
@@ -2125,10 +2196,10 @@
 
           <fieldset class="control-section" data-collapsible>
             <legend class="section-legend visually-hidden" id="section-manual-override-legend">
-              Manual lesson price override
+              Lesson price preferences
             </legend>
             <div class="section-header">
-              <span class="section-title" aria-hidden="true">Manual lesson price override</span>
+              <span class="section-title" aria-hidden="true">Lesson price preferences</span>
               <button
                 type="button"
                 class="section-toggle section-toggle--top"
@@ -2143,7 +2214,7 @@
             <div class="section-body" id="section-manual-override">
               <div class="control">
                 <label for="lesson-cost">
-                  <span class="label-text">Manual lesson cost (incl. VAT)</span>
+                  <span class="label-text">Set a specific lesson price (incl. VAT)</span>
                   <span
                     class="info-icon"
                     tabindex="0"
@@ -2153,7 +2224,29 @@
                   >ℹ️</span>
                 </label>
                 <input type="number" id="lesson-cost" min="0" step="0.01" inputmode="decimal" />
-                <p class="field-note">Entering a lesson cost updates the net income values above.</p>
+                <p class="field-note">Entering a lesson price updates the net income values above.</p>
+              </div>
+              <div
+                class="control control-panel control--lesson-price-range"
+                role="group"
+                aria-labelledby="lesson-price-range-label"
+              >
+                <div class="panel-header" id="lesson-price-range-label">
+                  <span class="label-text">Preferred price range (incl. VAT)</span>
+                </div>
+                <div class="inline-field-pair">
+                  <label for="lesson-price-min">
+                    <span class="input-label">Minimum</span>
+                    <input type="number" id="lesson-price-min" min="0" step="0.01" inputmode="decimal" />
+                  </label>
+                  <label for="lesson-price-max">
+                    <span class="input-label">Maximum</span>
+                    <input type="number" id="lesson-price-max" min="0" step="0.01" inputmode="decimal" />
+                  </label>
+                </div>
+                <p class="field-note">
+                  Prices outside this range are highlighted in the pricing table. Leave blank to skip highlighting.
+                </p>
               </div>
               <div class="section-footer">
                 <button
@@ -2953,6 +3046,8 @@
       classesPerWeek: document.getElementById('classes-per-week'),
       studentsPerClass: document.getElementById('students-per-class'),
       lessonCost: document.getElementById('lesson-cost'),
+      lessonPriceMin: document.getElementById('lesson-price-min'),
+      lessonPriceMax: document.getElementById('lesson-price-max'),
       monthsOff: document.getElementById('months-off'),
       weeksOffCycle: document.getElementById('weeks-off-cycle'),
       daysOffWeek: document.getElementById('days-off-week'),
@@ -3570,6 +3665,34 @@
         }
       }
 
+      let lessonPriceMin = null;
+      if (controls.lessonPriceMin instanceof HTMLInputElement) {
+        const rawMin = controls.lessonPriceMin.value;
+        if (typeof rawMin === 'string' && rawMin.trim() !== '') {
+          const parsedMin = Number(rawMin);
+          if (Number.isFinite(parsedMin) && parsedMin >= 0) {
+            lessonPriceMin = parsedMin;
+          }
+        }
+      }
+
+      let lessonPriceMax = null;
+      if (controls.lessonPriceMax instanceof HTMLInputElement) {
+        const rawMax = controls.lessonPriceMax.value;
+        if (typeof rawMax === 'string' && rawMax.trim() !== '') {
+          const parsedMax = Number(rawMax);
+          if (Number.isFinite(parsedMax) && parsedMax >= 0) {
+            lessonPriceMax = parsedMax;
+          }
+        }
+      }
+
+      if (lessonPriceMin != null && lessonPriceMax != null && lessonPriceMin > lessonPriceMax) {
+        const tempMin = lessonPriceMax;
+        lessonPriceMax = lessonPriceMin;
+        lessonPriceMin = tempMin;
+      }
+
       const activeMonthShare = Math.min(Math.max((12 - monthsOff) / 12, 0), 1);
       const activeMonths = 12 * activeMonthShare;
       const weeksShare = Math.min(Math.max((4 - weeksOffPerCycle) / 4, 0), 1);
@@ -3658,6 +3781,18 @@
         controls.variableCostPerStudentMonthly.value = formatFixed(variableCostPerStudentMonthly, 2);
       }
       controls.vatRate.value = formatFixed(vatRate * 100, 1);
+      if (controls.lessonPriceMin instanceof HTMLInputElement) {
+        controls.lessonPriceMin.value =
+          lessonPriceMin == null || !Number.isFinite(lessonPriceMin)
+            ? ''
+            : formatFixed(lessonPriceMin, 2);
+      }
+      if (controls.lessonPriceMax instanceof HTMLInputElement) {
+        controls.lessonPriceMax.value =
+          lessonPriceMax == null || !Number.isFinite(lessonPriceMax)
+            ? ''
+            : formatFixed(lessonPriceMax, 2);
+      }
       controls.monthsOff.value = formatFixed(monthsOff, 2);
       controls.weeksOffCycle.value = formatFixed(weeksOffPerCycle, 2);
       controls.daysOffWeek.value = formatFixed(daysOffPerWeek, 2);
@@ -3689,6 +3824,8 @@
         classesPerWeek,
         studentsPerClass,
         lessonCostInclVat,
+        lessonPriceMin,
+        lessonPriceMax,
         workingWeeks,
         buffer,
         bufferPercent,
@@ -4001,13 +4138,34 @@
         return `<div class="card"><p class="status-message">No valid combinations available.</p></div>`;
       }
 
-      const { mode = PRICING_MODE_TARGET, showBasePrices: showBase = false } = options;
+      const {
+        mode = PRICING_MODE_TARGET,
+        showBasePrices: showBase = false,
+        minLessonPrice = null,
+        maxLessonPrice = null
+      } = options;
       const formattedBuffer = formatFixed(bufferPercent, 1);
       const showBasePricesActive = mode === PRICING_MODE_TARGET && showBase;
       const cardClasses = ['card', 'pricing-card'];
       if (showBasePricesActive) {
         cardClasses.push('show-base-prices');
       }
+
+      const hasPreferredRange =
+        Number.isFinite(minLessonPrice) || Number.isFinite(maxLessonPrice);
+
+      const isPriceOutOfRange = value => {
+        if (!hasPreferredRange || !Number.isFinite(value)) {
+          return false;
+        }
+        if (Number.isFinite(minLessonPrice) && value < minLessonPrice) {
+          return true;
+        }
+        if (Number.isFinite(maxLessonPrice) && value > maxLessonPrice) {
+          return true;
+        }
+        return false;
+      };
 
       const toggleMarkup = mode === PRICING_MODE_TARGET
         ? `<div class="price-toggle-row">
@@ -4075,29 +4233,43 @@
               const bufferedInclVat = formatCurrency(symbol, col.buffered.priceInclVat);
               const baseExVat = formatCurrency(symbol, col.base.priceExVat);
               const baseInclVat = formatCurrency(symbol, col.base.priceInclVat);
+              const bufferedOutOfRange = isPriceOutOfRange(col.buffered.priceInclVat);
+              const baseOutOfRange = isPriceOutOfRange(col.base.priceInclVat);
+              const bufferedButtonClass = bufferedOutOfRange
+                ? 'price-line buffered price-line--out-of-range'
+                : 'price-line buffered';
+              const baseButtonClass = baseOutOfRange
+                ? 'price-line base price-line--out-of-range'
+                : 'price-line base';
+              const bufferedValueClass = bufferedOutOfRange
+                ? 'price-value price-value--out-of-range'
+                : 'price-value';
+              const baseValueClass = baseOutOfRange
+                ? 'price-value price-value--out-of-range'
+                : 'price-value';
               return `
                 <td>
                   <button
                     type="button"
-                    class="price-line buffered"
+                    class="${bufferedButtonClass}"
                     data-row="${rowIndex}"
                     data-column="${columnIndex}"
                     data-variant="buffered"
                   >
                     <span class="price-label">Buffered +${formattedBuffer}%</span>
-                    <strong>${bufferedInclVat}</strong>
+                    <strong class="${bufferedValueClass}">${bufferedInclVat}</strong>
                     <span class="price-secondary">ex VAT ${bufferedExVat}</span>
                   </button>
                   <button
                     type="button"
-                    class="price-line base"
+                    class="${baseButtonClass}"
                     aria-hidden="${showBasePricesActive ? 'false' : 'true'}"
                     data-row="${rowIndex}"
                     data-column="${columnIndex}"
                     data-variant="base"
                   >
                     <span class="price-label">Base (no buffer)</span>
-                    <strong>${baseInclVat}</strong>
+                    <strong class="${baseValueClass}">${baseInclVat}</strong>
                     <span class="price-secondary">ex VAT ${baseExVat}</span>
                   </button>
                 </td>
@@ -4557,7 +4729,9 @@
       } else {
         const pricingTable = buildPricingTable(pricingData, inputs.currencySymbol, bufferPercent, {
           mode,
-          showBasePrices
+          showBasePrices,
+          minLessonPrice: inputs.lessonPriceMin,
+          maxLessonPrice: inputs.lessonPriceMax
         });
         const targetsTable = mode === PRICING_MODE_LESSON
           ? ''
@@ -4612,7 +4786,9 @@
         activeMonths,
         activeMonthShare,
         weeksShare,
-        lessonCostInclVat
+        lessonCostInclVat,
+        lessonPriceMin,
+        lessonPriceMax
       } = inputs;
 
       const activeMonthPercentage = activeMonthShare * 100;
@@ -4633,8 +4809,14 @@
         : '—';
 
       const manualLessonLine = Number.isFinite(lessonCostInclVat)
-        ? `Manual lesson cost (incl. VAT): ${currencySymbol}${formatFixed(lessonCostInclVat, 2)}`
-        : 'Manual lesson cost (incl. VAT): not set';
+        ? `Preferred lesson price (incl. VAT): ${currencySymbol}${formatFixed(lessonCostInclVat, 2)}`
+        : 'Preferred lesson price (incl. VAT): not set';
+      const lessonMinLine = Number.isFinite(lessonPriceMin)
+        ? `Minimum preferred lesson price (incl. VAT): ${currencySymbol}${formatFixed(lessonPriceMin, 2)}`
+        : 'Minimum preferred lesson price (incl. VAT): not set';
+      const lessonMaxLine = Number.isFinite(lessonPriceMax)
+        ? `Maximum preferred lesson price (incl. VAT): ${currencySymbol}${formatFixed(lessonPriceMax, 2)}`
+        : 'Maximum preferred lesson price (incl. VAT): not set';
 
       const listItems = [
         `Net income per year: ${formatCurrency(currencySymbol, targetNet)}`,
@@ -4643,6 +4825,8 @@
         `Average weekly net income: ${targetAveragePerWeekDisplay}`,
         `Average monthly net income: ${targetAveragePerMonthDisplay}`,
         manualLessonLine,
+        lessonMinLine,
+        lessonMaxLine,
         `Effective income tax rate: ${formatFixed(taxRate * 100, 1)}%`,
         `Fixed annual costs: ${formatCurrency(currencySymbol, fixedCosts)}`,
         `Variable cost per class: ${formatCurrency(currencySymbol, variableCostPerClass)} (per scheduled class)`,
@@ -4656,7 +4840,7 @@
         `Classes per week considered: ${classesPerWeek.length ? classesPerWeek.join(', ') : 'none'}`,
         `Students per class considered: ${studentsPerClass.length ? studentsPerClass.join(', ') : 'none'}`,
         `Safety margin cushion (buffered price uses this %): ${formatFixed(bufferPercent, 1)}%`,
-        `VAT rate: ${formatFixed(vatRate * 100, 1)}%`,
+        `VAT/BTW rate: ${formatFixed(vatRate * 100, 1)}%`,
         `Currency symbol: ${currencySymbol}`,
         `Prices are rounded to whole currency units for display and CSV export.`
       ];
