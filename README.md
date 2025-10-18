@@ -1,6 +1,9 @@
 # course-pricing-calculator
 Something for working out costs and income.
 
+## Progressive Web App support
+The calculator now exposes a web app manifest and service worker so it can be installed on supported devices and keep working offline. Static assets and core pages are precached, and subsequent navigation attempts fall back to the cached calculator when the network is unavailable.
+
 ## Deployment options
 This repository publishes the static site defined in `index.html` to
 GitHub Pages using the **Pages (prod + previews)** workflow in

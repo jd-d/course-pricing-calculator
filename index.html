@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0a0c12" />
   <link rel="icon" href="assets/favicon.png" type="image/png" />
   <link rel="apple-touch-icon" href="assets/favicon.png" />
+  <link rel="manifest" href="manifest.webmanifest" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
@@ -12,6 +14,7 @@
     rel="stylesheet"
   />
   <title>Course Pricing Calculator</title>
+  <script src="pwa.js" defer></script>
   <style>
     :root {
       color-scheme: dark;
@@ -2980,6 +2983,10 @@
         themeToggleButton.setAttribute('title', actionLabel);
         themeToggleLabel.textContent = isDark ? 'Dark mode' : 'Light mode';
       }
+
+      document.dispatchEvent(
+        new CustomEvent('themechange', { detail: normalized })
+      );
     }
 
     const storedTheme = getStoredTheme();
