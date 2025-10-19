@@ -3243,6 +3243,43 @@
       'target-net-average-month': 'avgMonth'
     };
 
+    const controls = {
+      targetNet: document.getElementById('target-net'),
+      targetNetWeek: document.getElementById('target-net-week'),
+      targetNetMonth: document.getElementById('target-net-month'),
+      targetNetAverageWeek: document.getElementById('target-net-average-week'),
+      targetNetAverageMonth: document.getElementById('target-net-average-month'),
+      desiredIncomeToggleDisplay: document.getElementById('desired-income-toggle-display'),
+      desiredIncomeToggleInterpretation: document.getElementById('desired-income-toggle-interpretation'),
+      acceptableIncomeMin: document.getElementById('acceptable-income-min'),
+      acceptableIncomeMax: document.getElementById('acceptable-income-max'),
+      acceptableIncomeBasisMonthly: document.getElementById('acceptable-income-basis-monthly'),
+      acceptableIncomeBasisAnnual: document.getElementById('acceptable-income-basis-annual'),
+      taxRate: document.getElementById('tax-rate'),
+      fixedCosts: document.getElementById('fixed-costs'),
+      variableCostPerClass: document.getElementById('variable-cost-class'),
+      variableCostPerStudent: document.getElementById('variable-cost-student'),
+      variableCostPerStudentMonthly: document.getElementById('variable-cost-student-monthly'),
+      vatRate: document.getElementById('vat-rate'),
+      classesPerWeek: document.getElementById('classes-per-week'),
+      studentsPerClass: document.getElementById('students-per-class'),
+      lessonCost: document.getElementById('lesson-cost'),
+      lessonPriceMin: document.getElementById('lesson-price-min'),
+      lessonPriceMax: document.getElementById('lesson-price-max'),
+      monthsOff: document.getElementById('months-off'),
+      weeksOffCycle: document.getElementById('weeks-off-cycle'),
+      daysOffWeek: document.getElementById('days-off-week'),
+      buffer: document.getElementById('buffer'),
+      currencySymbol: document.getElementById('currency-symbol'),
+      recalcButton: document.getElementById('recalculate'),
+      downloadCsv: document.getElementById('download-csv'),
+      statusMessage: document.getElementById('status-message'),
+      workingWeeksDisplay: document.getElementById('working-weeks-display'),
+      workingDaysDisplay: document.getElementById('working-days-display'),
+      rememberInputs: document.getElementById('remember-inputs'),
+      resetSavedInputs: document.getElementById('reset-saved-inputs')
+    };
+
     const desiredIncomeFieldMap = {
       year: controls.targetNet,
       week: controls.targetNetWeek,
@@ -3327,6 +3364,11 @@
       const denominator = Math.max(1 - normalizedRate, 0.0001);
       return value / denominator;
     }
+
+    const WEEKS_PER_YEAR = 52;
+    const MONTHS_PER_YEAR = 12;
+    const BASE_WORK_DAYS_PER_WEEK = 7;
+    const TARGET_NET_DEFAULT = 50000;
 
     const ACCEPTABLE_INCOME_BASIS_VALUES = ['monthly', 'annual'];
     let acceptableIncomeBasis = 'monthly';
@@ -3509,43 +3551,6 @@
       }
       previousAcceptableIncome = null;
     }
-
-    const controls = {
-      targetNet: document.getElementById('target-net'),
-      targetNetWeek: document.getElementById('target-net-week'),
-      targetNetMonth: document.getElementById('target-net-month'),
-      targetNetAverageWeek: document.getElementById('target-net-average-week'),
-      targetNetAverageMonth: document.getElementById('target-net-average-month'),
-      desiredIncomeToggleDisplay: document.getElementById('desired-income-toggle-display'),
-      desiredIncomeToggleInterpretation: document.getElementById('desired-income-toggle-interpretation'),
-      acceptableIncomeMin: document.getElementById('acceptable-income-min'),
-      acceptableIncomeMax: document.getElementById('acceptable-income-max'),
-      acceptableIncomeBasisMonthly: document.getElementById('acceptable-income-basis-monthly'),
-      acceptableIncomeBasisAnnual: document.getElementById('acceptable-income-basis-annual'),
-      taxRate: document.getElementById('tax-rate'),
-      fixedCosts: document.getElementById('fixed-costs'),
-      variableCostPerClass: document.getElementById('variable-cost-class'),
-      variableCostPerStudent: document.getElementById('variable-cost-student'),
-      variableCostPerStudentMonthly: document.getElementById('variable-cost-student-monthly'),
-      vatRate: document.getElementById('vat-rate'),
-      classesPerWeek: document.getElementById('classes-per-week'),
-      studentsPerClass: document.getElementById('students-per-class'),
-      lessonCost: document.getElementById('lesson-cost'),
-      lessonPriceMin: document.getElementById('lesson-price-min'),
-      lessonPriceMax: document.getElementById('lesson-price-max'),
-      monthsOff: document.getElementById('months-off'),
-      weeksOffCycle: document.getElementById('weeks-off-cycle'),
-      daysOffWeek: document.getElementById('days-off-week'),
-      buffer: document.getElementById('buffer'),
-      currencySymbol: document.getElementById('currency-symbol'),
-      recalcButton: document.getElementById('recalculate'),
-      downloadCsv: document.getElementById('download-csv'),
-      statusMessage: document.getElementById('status-message'),
-      workingWeeksDisplay: document.getElementById('working-weeks-display'),
-      workingDaysDisplay: document.getElementById('working-days-display'),
-      rememberInputs: document.getElementById('remember-inputs'),
-      resetSavedInputs: document.getElementById('reset-saved-inputs')
-    };
 
     const desiredIncomeTitle = document.getElementById('desired-income-title');
     const desiredIncomeLegend = document.getElementById('section-desired-income-legend');
@@ -4017,11 +4022,6 @@
         positionInfoIconTooltip(activeInfoIcon);
       }
     });
-
-    const WEEKS_PER_YEAR = 52;
-    const MONTHS_PER_YEAR = 12;
-    const BASE_WORK_DAYS_PER_WEEK = 7;
-    const TARGET_NET_DEFAULT = 50000;
 
     function formatFixed(value, fractionDigits = 1) {
       const fixed = value.toFixed(fractionDigits);
