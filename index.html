@@ -975,6 +975,10 @@
       display: none;
     }
 
+    .controls .control-section.collapsed .section-footer {
+      display: none;
+    }
+
     .controls .control-section .section-body {
       display: flex;
       flex-direction: column;
@@ -2516,8 +2520,15 @@
               </div>
               <div class="control">
                 <label for="days-off-week">
-                  <span class="label-text">Days off per week</span>
-                  <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Defaults to a typical weekend off but supports partial-day values." data-tooltip="Defaults to a typical weekend off but supports partial-day values.">ℹ️</span>
+                  <span class="label-text">Days off per 7-day week</span>
+                  <span
+                    class="info-icon"
+                    tabindex="0"
+                    role="button"
+                    aria-expanded="false"
+                    aria-label="Defaults to a typical weekend off in a 7-day week but supports partial-day values."
+                    data-tooltip="Defaults to a typical weekend off in a 7-day week but supports partial-day values."
+                  >ℹ️</span>
                 </label>
                 <input type="number" id="days-off-week" value="2" min="0" max="7" step="0.25" inputmode="decimal" />
               </div>
@@ -2834,7 +2845,43 @@
       collapsibleSections.delete(section);
     }
 
-    function toggleCollapsibleSection(section, { trigger, explicitState } = {}) {
+    function captureCollapsibleSectionStates() {
+      const states = {};
+      document.querySelectorAll(COLLAPSIBLE_SECTION_SELECTOR).forEach(section => {
+        if (!(section instanceof HTMLElement)) {
+          return;
+        }
+        const body = section.querySelector('.section-body');
+        const key = body instanceof HTMLElement ? body.id : '';
+        if (!key) {
+          return;
+        }
+        states[key] = section.classList.contains('collapsed');
+      });
+      return states;
+    }
+
+    function applyCollapsibleSectionStates(states, { skipPersistence = false } = {}) {
+      if (!states || typeof states !== 'object') {
+        return;
+      }
+      document.querySelectorAll(COLLAPSIBLE_SECTION_SELECTOR).forEach(section => {
+        if (!(section instanceof HTMLElement)) {
+          return;
+        }
+        const body = section.querySelector('.section-body');
+        const key = body instanceof HTMLElement ? body.id : '';
+        if (!key || !Object.prototype.hasOwnProperty.call(states, key)) {
+          return;
+        }
+        toggleCollapsibleSection(section, {
+          explicitState: Boolean(states[key]),
+          skipPersistence: skipPersistence === true
+        });
+      });
+    }
+
+    function toggleCollapsibleSection(section, { trigger, explicitState, skipPersistence = false } = {}) {
       if (!(section instanceof HTMLElement)) {
         return;
       }
@@ -2895,6 +2942,10 @@
         requestAnimationFrame(scroll);
       } else {
         scroll();
+      }
+
+      if (!skipPersistence && persistenceEnabled) {
+        savePersistedInputs();
       }
     }
 
@@ -3241,6 +3292,9 @@
     let targetNetBasis = 'year';
     let desiredIncomeDisplayMode = 'net';
     let desiredIncomeLockedAsGross = false;
+    let desiredIncomeLockedGrossValues = null;
+    let acceptableIncomeLockedGrossMin = null;
+    let acceptableIncomeLockedGrossMax = null;
     let desiredIncomePreviousNetValues = null;
     const PRICING_MODE_TARGET = 'target';
     const PRICING_MODE_LESSON = 'lesson';
@@ -3255,6 +3309,7 @@
     const PERSISTED_ACCEPTABLE_INCOME_MIN_KEY = '__acceptableIncomeMinAnnualNet';
     const PERSISTED_ACCEPTABLE_INCOME_MAX_KEY = '__acceptableIncomeMaxAnnualNet';
     const PERSISTED_ACCEPTABLE_INCOME_BASIS_KEY = '__acceptableIncomeBasis';
+    const PERSISTED_COLLAPSED_SECTIONS_KEY = '__collapsedSectionsState';
     const TARGET_NET_BASIS_VALUES = ['year', 'week', 'month', 'avgWeek', 'avgMonth'];
     const TARGET_NET_BASIS_BY_INPUT_ID = {
       'target-net': 'year',
@@ -3384,6 +3439,149 @@
       const normalizedRate = Math.min(Math.max(taxRate, 0), 0.9999);
       const denominator = Math.max(1 - normalizedRate, 0.0001);
       return value / denominator;
+    }
+
+    function setDesiredIncomeLockedGrossValue(key, value) {
+      if (!desiredIncomeLockedAsGross) {
+        return;
+      }
+      if (!Number.isFinite(value)) {
+        if (
+          desiredIncomeLockedGrossValues &&
+          Object.prototype.hasOwnProperty.call(desiredIncomeLockedGrossValues, key)
+        ) {
+          delete desiredIncomeLockedGrossValues[key];
+        }
+        return;
+      }
+      if (!desiredIncomeLockedGrossValues) {
+        desiredIncomeLockedGrossValues = {};
+      }
+      desiredIncomeLockedGrossValues[key] = Math.max(value, 0);
+    }
+
+    function getDesiredIncomeLockedGrossValue(key, fallback = null) {
+      if (!desiredIncomeLockedGrossValues) {
+        return fallback;
+      }
+      const stored = desiredIncomeLockedGrossValues[key];
+      return Number.isFinite(stored) ? stored : fallback;
+    }
+
+    function clearDesiredIncomeLockedGrossStore() {
+      desiredIncomeLockedGrossValues = null;
+    }
+
+    function setLockedAcceptableIncomeGross(type, value) {
+      if (!desiredIncomeLockedAsGross) {
+        return;
+      }
+      if (!Number.isFinite(value)) {
+        if (type === 'min') {
+          acceptableIncomeLockedGrossMin = null;
+        } else if (type === 'max') {
+          acceptableIncomeLockedGrossMax = null;
+        }
+        return;
+      }
+      const normalized = Math.max(value, 0);
+      if (type === 'min') {
+        acceptableIncomeLockedGrossMin = normalized;
+      } else if (type === 'max') {
+        acceptableIncomeLockedGrossMax = normalized;
+      }
+    }
+
+    function getLockedAcceptableIncomeGross(type) {
+      const value = type === 'min' ? acceptableIncomeLockedGrossMin : acceptableIncomeLockedGrossMax;
+      return Number.isFinite(value) ? value : null;
+    }
+
+    function clearLockedAcceptableIncomeGross() {
+      acceptableIncomeLockedGrossMin = null;
+      acceptableIncomeLockedGrossMax = null;
+    }
+
+    function synchronizeLockedDesiredIncomeNetValues(taxRate) {
+      if (!desiredIncomeLockedAsGross) {
+        return;
+      }
+
+      Object.entries(desiredIncomeFieldMap).forEach(([key, field]) => {
+        if (!(field instanceof HTMLInputElement)) {
+          return;
+        }
+
+        const cached = getDesiredIncomeLockedGrossValue(key, null);
+        let grossValue = Number.isFinite(cached) ? cached : null;
+
+        const raw = typeof field.value === 'string' ? field.value.trim() : '';
+        if (raw !== '') {
+          const parsed = Number(raw);
+          if (Number.isFinite(parsed)) {
+            if (desiredIncomeDisplayMode === 'gross') {
+              grossValue = Math.max(parsed, 0);
+            } else {
+              const derivedGross = convertNetToGross(parsed, taxRate);
+              if (Number.isFinite(derivedGross)) {
+                grossValue = Math.max(derivedGross, 0);
+              }
+            }
+          }
+        }
+
+        if (!Number.isFinite(grossValue)) {
+          writeDesiredIncomeNet(key, null);
+          setDesiredIncomeLockedGrossValue(key, null);
+          return;
+        }
+
+        const netValue = convertGrossToNet(grossValue, taxRate);
+        if (!Number.isFinite(netValue)) {
+          return;
+        }
+
+        writeDesiredIncomeNet(key, Math.max(netValue, 0));
+        setDesiredIncomeLockedGrossValue(key, grossValue);
+      });
+    }
+
+    function synchronizeLockedAcceptableIncomeNetValues(taxRate, activeMonths) {
+      if (!desiredIncomeLockedAsGross) {
+        return;
+      }
+
+      const months = Number.isFinite(activeMonths) && activeMonths > 0 ? activeMonths : MONTHS_PER_YEAR;
+
+      const convertGrossBasisToAnnualNet = grossValue => {
+        if (!Number.isFinite(grossValue)) {
+          return null;
+        }
+        const netBasis = convertGrossToNet(grossValue, taxRate);
+        if (!Number.isFinite(netBasis)) {
+          return null;
+        }
+        if (acceptableIncomeBasis === 'annual') {
+          return netBasis;
+        }
+        return netBasis * months;
+      };
+
+      const minGross = getLockedAcceptableIncomeGross('min');
+      if (Number.isFinite(minGross)) {
+        const annualNet = convertGrossBasisToAnnualNet(minGross);
+        acceptableIncomeMinAnnualNet = Number.isFinite(annualNet) ? Math.max(annualNet, 0) : null;
+      } else {
+        acceptableIncomeMinAnnualNet = null;
+      }
+
+      const maxGross = getLockedAcceptableIncomeGross('max');
+      if (Number.isFinite(maxGross)) {
+        const annualNet = convertGrossBasisToAnnualNet(maxGross);
+        acceptableIncomeMaxAnnualNet = Number.isFinite(annualNet) ? Math.max(annualNet, 0) : null;
+      } else {
+        acceptableIncomeMaxAnnualNet = null;
+      }
     }
 
     const WEEKS_PER_YEAR = 52;
@@ -3579,10 +3777,18 @@
       const raw = typeof field.value === 'string' ? field.value.trim() : '';
       if (raw === '') {
         writeDesiredIncomeNet(basis, null);
+        if (desiredIncomeLockedAsGross) {
+          setDesiredIncomeLockedGrossValue(basis, null);
+        } else if (desiredIncomeLockedGrossValues) {
+          delete desiredIncomeLockedGrossValues[basis];
+        }
         return;
       }
       const parsed = Number(raw);
       if (!Number.isFinite(parsed)) {
+        if (desiredIncomeLockedAsGross) {
+          setDesiredIncomeLockedGrossValue(basis, null);
+        }
         return;
       }
       const taxRate = getCurrentTaxRate();
@@ -3590,6 +3796,18 @@
         ? convertGrossToNet(parsed, taxRate)
         : parsed;
       writeDesiredIncomeNet(basis, Math.max(netValue, 0));
+      if (desiredIncomeLockedAsGross) {
+        const grossForStore = desiredIncomeDisplayMode === 'gross'
+          ? parsed
+          : convertNetToGross(parsed, taxRate);
+        if (Number.isFinite(grossForStore)) {
+          setDesiredIncomeLockedGrossValue(basis, Math.max(grossForStore, 0));
+        } else {
+          setDesiredIncomeLockedGrossValue(basis, null);
+        }
+      } else if (desiredIncomeLockedGrossValues) {
+        delete desiredIncomeLockedGrossValues[basis];
+      }
     }
 
     function updateAcceptableIncomeFromInput(type) {
@@ -3604,10 +3822,16 @@
         } else {
           acceptableIncomeMaxAnnualNet = null;
         }
+        if (desiredIncomeLockedAsGross) {
+          setLockedAcceptableIncomeGross(type, null);
+        }
         return;
       }
       const parsed = Number(raw);
       if (!Number.isFinite(parsed)) {
+        if (desiredIncomeLockedAsGross) {
+          setLockedAcceptableIncomeGross(type, null);
+        }
         return;
       }
       const taxRate = getCurrentTaxRate();
@@ -3615,6 +3839,16 @@
         ? convertGrossToNet(parsed, taxRate)
         : parsed;
       const normalizedNet = Math.max(netValue, 0);
+      if (desiredIncomeLockedAsGross) {
+        const grossForStore = desiredIncomeDisplayMode === 'gross'
+          ? parsed
+          : convertNetToGross(parsed, taxRate);
+        if (Number.isFinite(grossForStore)) {
+          setLockedAcceptableIncomeGross(type, Math.max(grossForStore, 0));
+        } else {
+          setLockedAcceptableIncomeGross(type, null);
+        }
+      }
       const months = lastActiveMonths > 0 ? lastActiveMonths : MONTHS_PER_YEAR;
       const annualNet = acceptableIncomeBasis === 'annual'
         ? normalizedNet
@@ -3727,6 +3961,7 @@
         ? acceptableIncomeMaxAnnualNet
         : null;
       values[PERSISTED_ACCEPTABLE_INCOME_BASIS_KEY] = acceptableIncomeBasis;
+      values[PERSISTED_COLLAPSED_SECTIONS_KEY] = captureCollapsibleSectionStates();
       Object.keys(desiredIncomeFieldMap).forEach(key => {
         const netValue = readDesiredIncomeNet(key, null);
         values[`__desiredIncomeNet_${key}`] = Number.isFinite(netValue) ? netValue : null;
@@ -3836,6 +4071,18 @@
           : parsed;
         writeDesiredIncomeNet(key, Math.max(netValue, 0));
       });
+      if (desiredIncomeLockedAsGross) {
+        synchronizeLockedDesiredIncomeNetValues(getCurrentTaxRate());
+        updateAcceptableIncomeFromInput('min');
+        updateAcceptableIncomeFromInput('max');
+      } else {
+        clearDesiredIncomeLockedGrossStore();
+        clearLockedAcceptableIncomeGross();
+      }
+      const storedCollapsedStates = values[PERSISTED_COLLAPSED_SECTIONS_KEY];
+      if (storedCollapsedStates && typeof storedCollapsedStates === 'object') {
+        applyCollapsibleSectionStates(storedCollapsedStates, { skipPersistence: true });
+      }
       updateDesiredIncomeTitle();
       updateDesiredIncomeLabels();
       updateAcceptableIncomeBasisLabel();
@@ -4281,6 +4528,9 @@
 
       const taxRatePercent = Math.min(Math.max(parseNumber(controls.taxRate.value, 40), 0), 99.9);
       const taxRate = taxRatePercent / 100;
+      if (desiredIncomeLockedAsGross) {
+        synchronizeLockedDesiredIncomeNetValues(taxRate);
+      }
       const fixedCosts = updateFixedCostTotalDisplay();
       const variableCostPerClass = Math.max(parseNumber(controls.variableCostPerClass.value, 0), 0);
       const variableCostPerStudent = Math.max(parseNumber(controls.variableCostPerStudent.value, 0), 0);
@@ -4342,6 +4592,9 @@
 
       lastActiveMonths = activeMonths;
       lastWorkingWeeks = workingWeeks;
+      if (desiredIncomeLockedAsGross) {
+        synchronizeLockedAcceptableIncomeNetValues(taxRate, activeMonths);
+      }
 
       const defaultTargetNetWeek = workingWeeks > 0 ? TARGET_NET_DEFAULT / workingWeeks : TARGET_NET_DEFAULT;
       const defaultTargetNetMonth = activeMonths > 0 ? TARGET_NET_DEFAULT / activeMonths : TARGET_NET_DEFAULT;
@@ -4873,6 +5126,23 @@
       const hasPreferredRange =
         Number.isFinite(minLessonPrice) || Number.isFinite(maxLessonPrice);
 
+      const convertNetIncomeForDisplay = value => {
+        if (!Number.isFinite(value)) {
+          return null;
+        }
+        return incomeDisplayMode === 'gross'
+          ? convertNetToGross(value, incomeTaxRate)
+          : value;
+      };
+
+      const formatIncomeForDisplay = value => {
+        const converted = convertNetIncomeForDisplay(value);
+        return Number.isFinite(converted) ? formatCurrency(symbol, converted) : '—';
+      };
+
+      const monthlyIncomeLabel = incomeDisplayMode === 'gross' ? 'Monthly gross' : 'Monthly net';
+      const annualIncomeLabel = incomeDisplayMode === 'gross' ? 'Annual gross' : 'Annual net';
+
       const isPriceOutOfRange = value => {
         if (!hasPreferredRange || !Number.isFinite(value)) {
           return false;
@@ -4905,18 +5175,10 @@
           const cells = row.columns
             .map((col, columnIndex) => {
               if (mode === PRICING_MODE_LESSON && col.manualNet) {
-                const monthlyDisplay = Number.isFinite(col.manualNet.monthly)
-                  ? formatCurrency(symbol, col.manualNet.monthly)
-                  : '—';
-                const annualDisplay = Number.isFinite(col.manualNet.annual)
-                  ? formatCurrency(symbol, col.manualNet.annual)
-                  : '—';
-                const bufferedMonthlyDisplay = Number.isFinite(col.manualNet.bufferedMonthly)
-                  ? formatCurrency(symbol, col.manualNet.bufferedMonthly)
-                  : '—';
-                const bufferedAnnualDisplay = Number.isFinite(col.manualNet.bufferedAnnual)
-                  ? formatCurrency(symbol, col.manualNet.bufferedAnnual)
-                  : '—';
+                const monthlyDisplay = formatIncomeForDisplay(col.manualNet.monthly);
+                const annualDisplay = formatIncomeForDisplay(col.manualNet.annual);
+                const bufferedMonthlyDisplay = formatIncomeForDisplay(col.manualNet.bufferedMonthly);
+                const bufferedAnnualDisplay = formatIncomeForDisplay(col.manualNet.bufferedAnnual);
 
                 const highlightBase = shouldHighlightIncome(
                   { monthlyNet: col.manualNet.monthly, annualNet: col.manualNet.annual },
@@ -4955,9 +5217,9 @@
                       data-column="${columnIndex}"
                       data-variant="base"
                     >
-                      <span class="price-label">Monthly net</span>
+                      <span class="price-label">${monthlyIncomeLabel}</span>
                       <strong>${monthlyDisplay}</strong>
-                      <span class="price-secondary">Annual net ${annualDisplay}</span>
+                      <span class="price-secondary">${annualIncomeLabel} ${annualDisplay}</span>
                     </button>
                     <button
                       type="button"
@@ -4966,9 +5228,9 @@
                       data-column="${columnIndex}"
                       data-variant="buffered"
                     >
-                      <span class="price-label">Monthly net with ${formattedBuffer}% shortfall</span>
+                      <span class="price-label">${monthlyIncomeLabel} with ${formattedBuffer}% shortfall</span>
                       <strong>${bufferedMonthlyDisplay}</strong>
-                      <span class="price-secondary">Annual net ${bufferedAnnualDisplay}</span>
+                      <span class="price-secondary">${annualIncomeLabel} ${bufferedAnnualDisplay}</span>
                     </button>
                   </div>
                 </td>
@@ -4981,12 +5243,42 @@
               const baseInclVat = formatCurrency(symbol, col.base.priceInclVat);
               const bufferedOutOfRange = isPriceOutOfRange(col.buffered.priceInclVat);
               const baseOutOfRange = isPriceOutOfRange(col.base.priceInclVat);
-              const bufferedButtonClass = bufferedOutOfRange
-                ? 'price-line buffered price-line--out-of-range'
-                : 'price-line buffered';
-              const baseButtonClass = baseOutOfRange
-                ? 'price-line base price-line--out-of-range'
-                : 'price-line base';
+              const highlightBaseIncome = shouldHighlightIncome(
+                { monthlyNet: col.base.monthlyNet, annualNet: col.base.annualNet },
+                {
+                  acceptableIncome: acceptableIncomeRange,
+                  displayMode: incomeDisplayMode,
+                  taxRate: incomeTaxRate,
+                  activeMonths: incomeActiveMonths
+                }
+              );
+              const highlightBufferedIncome = shouldHighlightIncome(
+                { monthlyNet: col.buffered.monthlyNet, annualNet: col.buffered.annualNet },
+                {
+                  acceptableIncome: acceptableIncomeRange,
+                  displayMode: incomeDisplayMode,
+                  taxRate: incomeTaxRate,
+                  activeMonths: incomeActiveMonths
+                }
+              );
+              const bufferedClasses = ['price-line', 'buffered'];
+              if (bufferedOutOfRange) {
+                bufferedClasses.push('price-line--out-of-range');
+              }
+              if (highlightBufferedIncome) {
+                bufferedClasses.push('price-line--acceptable');
+              }
+              const baseClasses = ['price-line', 'base'];
+              if (baseOutOfRange) {
+                baseClasses.push('price-line--out-of-range');
+              }
+              if (highlightBaseIncome) {
+                baseClasses.push('price-line--acceptable');
+              }
+              const bufferedButtonClass = bufferedClasses.join(' ');
+              const baseButtonClass = baseClasses.join(' ');
+              const bufferedAnnualIncomeDisplay = formatIncomeForDisplay(col.buffered.annualNet);
+              const baseAnnualIncomeDisplay = formatIncomeForDisplay(col.base.annualNet);
               const bufferedValueClass = bufferedOutOfRange
                 ? 'price-value price-value--out-of-range'
                 : 'price-value';
@@ -5004,6 +5296,7 @@
                   >
                     <span class="price-label">Buffered +${formattedBuffer}%</span>
                     <strong class="${bufferedValueClass}">${bufferedInclVat}</strong>
+                    <span class="price-secondary">${annualIncomeLabel} ${bufferedAnnualIncomeDisplay}</span>
                     <span class="price-secondary">ex VAT ${bufferedExVat}</span>
                   </button>
                   <button
@@ -5016,6 +5309,7 @@
                   >
                     <span class="price-label">Base (no buffer)</span>
                     <strong class="${baseValueClass}">${baseInclVat}</strong>
+                    <span class="price-secondary">${annualIncomeLabel} ${baseAnnualIncomeDisplay}</span>
                     <span class="price-secondary">ex VAT ${baseExVat}</span>
                   </button>
                 </td>
@@ -5366,18 +5660,35 @@
             classesPerYearValue: classesPerYear
           });
 
+          const baseAnnualNet = Number.isFinite(baseBreakdown?.perLesson?.netIncome)
+            ? baseBreakdown.perLesson.netIncome * classesPerYear
+            : null;
+          const bufferedAnnualNet = Number.isFinite(bufferedBreakdown?.perLesson?.netIncome)
+            ? bufferedBreakdown.perLesson.netIncome * classesPerYear
+            : null;
+          const baseMonthlyNet = Number.isFinite(baseAnnualNet) && hasActiveMonths
+            ? baseAnnualNet / activeMonths
+            : null;
+          const bufferedMonthlyNet = Number.isFinite(bufferedAnnualNet) && hasActiveMonths
+            ? bufferedAnnualNet / activeMonths
+            : null;
+
           row.columns.push({
             classesPerWeek: column.classesPerWeek,
             classesPerYear,
             base: {
               priceExVat,
               priceInclVat,
-              breakdown: baseBreakdown
+              breakdown: baseBreakdown,
+              annualNet: baseAnnualNet,
+              monthlyNet: baseMonthlyNet
             },
             buffered: {
               priceExVat: bufferedExVat,
               priceInclVat: bufferedInclVat,
-              breakdown: bufferedBreakdown
+              breakdown: bufferedBreakdown,
+              annualNet: bufferedAnnualNet,
+              monthlyNet: bufferedMonthlyNet
             }
           });
 
@@ -5592,7 +5903,7 @@
         `Variable monthly cost per student: ${formatCurrency(currencySymbol, variableCostPerStudentMonthly)} (multiplied by class size each active month)`,
         `Months off per year: ${formatFixed(monthsOff, 2)} (≈ ${formatFixed(activeMonths, 2)} active months; ${formatFixed(activeMonthPercentage, 1)}% of the year)`,
         `Weeks off per 4-week cycle: ${formatFixed(weeksOffPerCycle, 2)} (≈ ${formatFixed(workingWeeksPerCycle, 2)} working weeks each cycle; ${formatFixed(activeWeeksPercentage, 1)}% active weeks)`,
-        `Days off per week: ${formatFixed(daysOffPerWeek, 2)} (≈ ${formatFixed(workingDaysPerWeek, 2)} working days when active)`,
+        `Days off per 7-day week: ${formatFixed(daysOffPerWeek, 2)} (≈ ${formatFixed(workingDaysPerWeek, 2)} working days when active)`,
         `Estimated working weeks per year: ${formatFixed(workingWeeks, 2)}`,
         `Estimated working days per year: ${formatFixed(workingDaysPerYear, 2)}`,
         `Classes per week considered: ${classesPerWeek.length ? classesPerWeek.join(', ') : 'none'}`,
@@ -5774,12 +6085,14 @@
             max: acceptableIncomeMaxAnnualNet
           };
           desiredIncomeDisplayMode = 'gross';
+          clearDesiredIncomeLockedGrossStore();
+          clearLockedAcceptableIncomeGross();
+          desiredIncomeLockedAsGross = true;
           Object.keys(desiredIncomeFieldMap).forEach(key => {
             updateDesiredIncomeFromField(key);
           });
           updateAcceptableIncomeFromInput('min');
           updateAcceptableIncomeFromInput('max');
-          desiredIncomeLockedAsGross = true;
           clearDesiredIncomeEditingState();
           clearAcceptableIncomeEditingState();
           updateDesiredIncomeTitle();
@@ -5790,6 +6103,8 @@
           render();
         } else {
           desiredIncomeLockedAsGross = false;
+          clearDesiredIncomeLockedGrossStore();
+          clearLockedAcceptableIncomeGross();
           desiredIncomeDisplayMode = 'net';
           if (desiredIncomePreviousNetValues) {
             restoreDesiredIncomeNetValues(desiredIncomePreviousNetValues);
