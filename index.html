@@ -86,6 +86,9 @@
       --active-bg: rgba(77, 163, 255, 0.12);
       --active-border: rgba(77, 163, 255, 0.45);
       --price-out-of-range: #ff7b7b;
+      --price-acceptable-bg: rgba(34, 197, 94, 0.18);
+      --price-acceptable-border: rgba(34, 197, 94, 0.5);
+      --price-acceptable-hover: rgba(34, 197, 94, 0.28);
     }
 
     body[data-theme="light"] {
@@ -153,6 +156,9 @@
       --active-bg: rgba(37, 99, 235, 0.12);
       --active-border: rgba(37, 99, 235, 0.35);
       --price-out-of-range: #b91c1c;
+      --price-acceptable-bg: rgba(34, 197, 94, 0.14);
+      --price-acceptable-border: rgba(34, 197, 94, 0.32);
+      --price-acceptable-hover: rgba(34, 197, 94, 0.22);
     }
 
     * {
@@ -987,6 +993,90 @@
       transition: border-color 0.3s ease, background-color 0.3s ease, padding 0.3s ease;
     }
 
+    .desired-income-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .desired-income-actions .secondary {
+      flex: 1 1 200px;
+      min-width: 160px;
+      justify-content: center;
+    }
+
+    .acceptable-income-group {
+      gap: 14px;
+      padding: 16px;
+      background: var(--field-bg);
+      border: 1px solid var(--field-border);
+    }
+
+    .acceptable-income-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .acceptable-income-header .label-text {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .acceptable-income-header .sub-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+    }
+
+    .acceptable-income-basis {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .acceptable-income-basis__option {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .acceptable-income-basis__option input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .acceptable-income-basis__option span {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--secondary-button-border);
+      background: var(--secondary-button-bg);
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .acceptable-income-basis__option input:checked + span {
+      color: var(--text-primary);
+      border-color: var(--secondary-button-border);
+      background: var(--secondary-button-hover-bg);
+    }
+
+    .acceptable-income-inputs {
+      gap: 12px;
+    }
+
     .control {
       display: flex;
       flex-direction: column;
@@ -1506,6 +1596,21 @@
       box-shadow: 0 0 0 3px var(--focus-ring);
     }
 
+    button.price-line.price-line--acceptable {
+      background: var(--price-acceptable-bg);
+      border-color: var(--price-acceptable-border);
+    }
+
+    button.price-line.price-line--acceptable:hover {
+      background: var(--price-acceptable-hover);
+      border-color: var(--price-acceptable-border);
+    }
+
+    button.price-line.price-line--acceptable:focus-visible {
+      background: var(--price-acceptable-hover);
+      border-color: var(--price-acceptable-border);
+    }
+
     .pricing-card.show-base-prices .price-line.base {
       display: flex;
     }
@@ -1752,92 +1857,197 @@
           </fieldset>
 
           <fieldset class="control-section" data-collapsible>
-            <legend class="section-legend visually-hidden" id="section-net-income-legend">Net income</legend>
+            <legend class="section-legend visually-hidden" id="section-desired-income-legend">Desired income</legend>
             <div class="section-header">
-              <span class="section-title" aria-hidden="true">Net income</span>
+              <span class="section-title" aria-hidden="true">
+                <span id="desired-income-title">Desired Net Income</span>
+              </span>
               <button
                 type="button"
                 class="section-toggle section-toggle--top"
                 data-expanded-text="Collapse"
                 data-collapsed-text="Expand"
                 aria-expanded="true"
-                aria-controls="section-net-income"
+                aria-controls="section-desired-income"
               >
                 <span class="toggle-label">Collapse</span>
               </button>
             </div>
-            <div class="section-body" id="section-net-income">
+            <div class="section-body" id="section-desired-income">
+              <div class="desired-income-actions" role="group" aria-label="Income display options">
+                <button type="button" class="secondary" id="desired-income-toggle-display">
+                  Toggle Gross/Net
+                </button>
+                <button type="button" class="secondary" id="desired-income-toggle-interpretation">
+                  Toggle Gross/Net (lock amount)
+                </button>
+              </div>
               <div class="control-group">
-                <p class="field-note">Entering a net income value will update the lesson cost automatically.</p>
+                <p class="field-note">Entering an income value will update the lesson cost automatically.</p>
                 <div class="control">
                   <label for="target-net">
-                    <span class="label-text">Net income per year</span>
-                    <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Amount you want to take home after income taxes." data-tooltip="Amount you want to take home after income taxes.">ℹ️</span>
+                    <span
+                      class="label-text"
+                      data-net-label="Net income per year"
+                      data-gross-label="Gross income per year"
+                    >Net income per year</span>
+                    <span
+                      class="info-icon"
+                      tabindex="0"
+                      role="button"
+                      aria-expanded="false"
+                      data-net-tooltip="Amount you want to take home after income taxes."
+                      data-gross-tooltip="Income before income taxes needed to reach your desired take-home pay."
+                      data-tooltip="Amount you want to take home after income taxes."
+                      aria-label="Amount you want to take home after income taxes."
+                    >ℹ️</span>
                   </label>
                   <input type="number" id="target-net" value="50000" min="0" step="100" inputmode="decimal" />
                 </div>
                 <div class="control">
                   <label for="target-net-week">
-                    <span class="label-text">Net income per active week</span>
+                    <span
+                      class="label-text"
+                      data-net-label="Net income per active week"
+                      data-gross-label="Gross income per active week"
+                    >Net income per active week</span>
                     <span
                       class="info-icon"
                       tabindex="0"
-                      role="button" aria-expanded="false"
-                      aria-label="Weeks you are actively teaching after factoring in planned time off."
-                      data-tooltip="Weeks you are actively teaching after factoring in planned time off."
+                      role="button"
+                      aria-expanded="false"
+                      data-net-tooltip="Take-home pay for each active teaching week after income taxes."
+                      data-gross-tooltip="Income before taxes earned during each active teaching week."
+                      data-tooltip="Take-home pay for each active teaching week after income taxes."
+                      aria-label="Take-home pay for each active teaching week after income taxes."
                     >ℹ️</span>
                   </label>
                   <input type="number" id="target-net-week" value="2000" min="0" step="50" inputmode="decimal" />
                 </div>
                 <div class="control">
                   <label for="target-net-month">
-                    <span class="label-text">Net income per active month</span>
+                    <span
+                      class="label-text"
+                      data-net-label="Net income per active month"
+                      data-gross-label="Gross income per active month"
+                    >Net income per active month</span>
                     <span
                       class="info-icon"
                       tabindex="0"
-                      role="button" aria-expanded="false"
-                      aria-label="Active months exclude the time off set below."
-                      data-tooltip="Active months exclude the time off set below."
+                      role="button"
+                      aria-expanded="false"
+                      data-net-tooltip="Take-home pay for each month you actively teach after income taxes."
+                      data-gross-tooltip="Income before taxes for each month you actively teach."
+                      data-tooltip="Take-home pay for each month you actively teach after income taxes."
+                      aria-label="Take-home pay for each month you actively teach after income taxes."
                     >ℹ️</span>
                   </label>
                   <input type="number" id="target-net-month" value="5000" min="0" step="100" inputmode="decimal" />
                 </div>
                 <div class="control">
                   <label for="target-net-average-week">
-                    <span class="label-text">Average weekly net income</span>
+                    <span
+                      class="label-text"
+                      data-net-label="Average weekly net income"
+                      data-gross-label="Average weekly gross income"
+                    >Average weekly net income</span>
                     <span
                       class="info-icon"
                       tabindex="0"
-                      role="button" aria-expanded="false"
-                      aria-label="Average over every week in the year, including planned time off."
-                      data-tooltip="Average over every week in the year, including planned time off."
+                      role="button"
+                      aria-expanded="false"
+                      data-net-tooltip="Average weekly take-home pay spread across the full year."
+                      data-gross-tooltip="Average weekly income before taxes spread across the full year."
+                      data-tooltip="Average weekly take-home pay spread across the full year."
+                      aria-label="Average weekly take-home pay spread across the full year."
                     >ℹ️</span>
                   </label>
                   <input type="number" id="target-net-average-week" value="961.54" min="0" step="10" inputmode="decimal" />
                 </div>
                 <div class="control">
                   <label for="target-net-average-month">
-                    <span class="label-text">Average monthly net income</span>
+                    <span
+                      class="label-text"
+                      data-net-label="Average monthly net income"
+                      data-gross-label="Average monthly gross income"
+                    >Average monthly net income</span>
                     <span
                       class="info-icon"
                       tabindex="0"
-                      role="button" aria-expanded="false"
-                      aria-label="Average over every month in the year, including planned time off."
-                      data-tooltip="Average over every month in the year, including planned time off."
+                      role="button"
+                      aria-expanded="false"
+                      data-net-tooltip="Average monthly take-home pay spread across the full year."
+                      data-gross-tooltip="Average monthly income before taxes spread across the full year."
+                      data-tooltip="Average monthly take-home pay spread across the full year."
+                      aria-label="Average monthly take-home pay spread across the full year."
                     >ℹ️</span>
+                </label>
+                <input type="number" id="target-net-average-month" value="4166.67" min="0" step="50" inputmode="decimal" />
+              </div>
+            </div>
+            <div class="control-group acceptable-income-group">
+              <div class="acceptable-income-header">
+                <span class="label-text">Acceptable income range (optional)</span>
+                <span class="sub-label" id="acceptable-income-current-basis">Monthly</span>
+              </div>
+              <div class="acceptable-income-basis" role="radiogroup" aria-label="Acceptable income period">
+                <label class="acceptable-income-basis__option" for="acceptable-income-basis-monthly">
+                  <input
+                    type="radio"
+                    name="acceptable-income-basis"
+                    id="acceptable-income-basis-monthly"
+                    value="monthly"
+                    checked
+                  />
+                  <span>Monthly</span>
+                </label>
+                <label class="acceptable-income-basis__option" for="acceptable-income-basis-annual">
+                  <input
+                    type="radio"
+                    name="acceptable-income-basis"
+                    id="acceptable-income-basis-annual"
+                    value="annual"
+                  />
+                  <span>Annual</span>
+                </label>
+              </div>
+              <div class="inline-field-pair acceptable-income-inputs">
+                <div class="control control--nested">
+                  <label for="acceptable-income-min">
+                    <span class="label-text">Minimum income</span>
                   </label>
-                  <input type="number" id="target-net-average-month" value="4166.67" min="0" step="50" inputmode="decimal" />
+                  <input
+                    type="number"
+                    id="acceptable-income-min"
+                    inputmode="decimal"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+                <div class="control control--nested">
+                  <label for="acceptable-income-max">
+                    <span class="label-text">Maximum income</span>
+                  </label>
+                  <input
+                    type="number"
+                    id="acceptable-income-max"
+                    inputmode="decimal"
+                    min="0"
+                    step="0.01"
+                  />
                 </div>
               </div>
-              <div class="section-footer">
-                <button
-                  type="button"
-                  class="section-toggle section-toggle--bottom"
-                  data-expanded-text="Collapse section"
-                  data-collapsed-text="Expand section"
-                  aria-expanded="true"
-                  aria-controls="section-net-income"
-                >
+              <p class="field-note">Leave either value blank if you do not have a minimum or maximum target.</p>
+            </div>
+            <div class="section-footer">
+              <button
+                type="button"
+                class="section-toggle section-toggle--bottom"
+                data-expanded-text="Collapse section"
+                data-collapsed-text="Expand section"
+                aria-expanded="true"
+                aria-controls="section-desired-income"
+              >
                   <span class="toggle-label">Collapse section</span>
                 </button>
               </div>
@@ -3029,6 +3239,9 @@
     let latestResults = [];
     let showBasePrices = false;
     let targetNetBasis = 'year';
+    let desiredIncomeDisplayMode = 'net';
+    let desiredIncomeLockedAsGross = false;
+    let desiredIncomePreviousNetValues = null;
     const PRICING_MODE_TARGET = 'target';
     const PRICING_MODE_LESSON = 'lesson';
     let latestResultsMode = PRICING_MODE_TARGET;
@@ -3037,6 +3250,11 @@
     let latestPricingMode = PRICING_MODE_TARGET;
     let latestBufferPercent = 0;
     const PERSISTED_TARGET_NET_BASIS_KEY = '__targetNetBasis';
+    const PERSISTED_DESIRED_INCOME_DISPLAY_KEY = '__desiredIncomeDisplay';
+    const PERSISTED_DESIRED_INCOME_LOCK_KEY = '__desiredIncomeLock';
+    const PERSISTED_ACCEPTABLE_INCOME_MIN_KEY = '__acceptableIncomeMinAnnualNet';
+    const PERSISTED_ACCEPTABLE_INCOME_MAX_KEY = '__acceptableIncomeMaxAnnualNet';
+    const PERSISTED_ACCEPTABLE_INCOME_BASIS_KEY = '__acceptableIncomeBasis';
     const TARGET_NET_BASIS_VALUES = ['year', 'week', 'month', 'avgWeek', 'avgMonth'];
     const TARGET_NET_BASIS_BY_INPUT_ID = {
       'target-net': 'year',
@@ -3052,6 +3270,12 @@
       targetNetMonth: document.getElementById('target-net-month'),
       targetNetAverageWeek: document.getElementById('target-net-average-week'),
       targetNetAverageMonth: document.getElementById('target-net-average-month'),
+      desiredIncomeToggleDisplay: document.getElementById('desired-income-toggle-display'),
+      desiredIncomeToggleInterpretation: document.getElementById('desired-income-toggle-interpretation'),
+      acceptableIncomeMin: document.getElementById('acceptable-income-min'),
+      acceptableIncomeMax: document.getElementById('acceptable-income-max'),
+      acceptableIncomeBasisMonthly: document.getElementById('acceptable-income-basis-monthly'),
+      acceptableIncomeBasisAnnual: document.getElementById('acceptable-income-basis-annual'),
       taxRate: document.getElementById('tax-rate'),
       fixedCosts: document.getElementById('fixed-costs'),
       variableCostPerClass: document.getElementById('variable-cost-class'),
@@ -3076,6 +3300,342 @@
       rememberInputs: document.getElementById('remember-inputs'),
       resetSavedInputs: document.getElementById('reset-saved-inputs')
     };
+
+    const desiredIncomeFieldMap = {
+      year: controls.targetNet,
+      week: controls.targetNetWeek,
+      month: controls.targetNetMonth,
+      avgWeek: controls.targetNetAverageWeek,
+      avgMonth: controls.targetNetAverageMonth
+    };
+
+    function getDesiredIncomeField(key) {
+      const field = desiredIncomeFieldMap[key];
+      return field instanceof HTMLInputElement ? field : null;
+    }
+
+    function readDesiredIncomeNet(key, fallback = null) {
+      const field = getDesiredIncomeField(key);
+      if (!field) {
+        return fallback;
+      }
+      const stored = field.dataset.netValue;
+      if (typeof stored === 'string' && stored.trim() !== '') {
+        const parsed = Number(stored);
+        if (Number.isFinite(parsed)) {
+          return parsed;
+        }
+      }
+      const raw = field.value;
+      if (typeof raw === 'string' && raw.trim() !== '') {
+        const parsed = Number(raw);
+        if (Number.isFinite(parsed)) {
+          return parsed;
+        }
+      }
+      return fallback;
+    }
+
+    function writeDesiredIncomeNet(key, value) {
+      const field = getDesiredIncomeField(key);
+      if (!field) {
+        return;
+      }
+      if (Number.isFinite(value)) {
+        field.dataset.netValue = String(value);
+      } else {
+        delete field.dataset.netValue;
+      }
+    }
+
+    function captureDesiredIncomeNetValues() {
+      return Object.keys(desiredIncomeFieldMap).reduce((accumulator, key) => {
+        const value = readDesiredIncomeNet(key, null);
+        if (Number.isFinite(value)) {
+          accumulator[key] = value;
+        }
+        return accumulator;
+      }, {});
+    }
+
+    function restoreDesiredIncomeNetValues(values) {
+      if (!values || typeof values !== 'object') {
+        return;
+      }
+      Object.entries(values).forEach(([key, value]) => {
+        if (Number.isFinite(value)) {
+          writeDesiredIncomeNet(key, value);
+        }
+      });
+    }
+
+    function convertGrossToNet(value, taxRate) {
+      if (!Number.isFinite(value)) {
+        return null;
+      }
+      const normalizedRate = Math.min(Math.max(taxRate, 0), 0.9999);
+      return value * (1 - normalizedRate);
+    }
+
+    function convertNetToGross(value, taxRate) {
+      if (!Number.isFinite(value)) {
+        return null;
+      }
+      const normalizedRate = Math.min(Math.max(taxRate, 0), 0.9999);
+      const denominator = Math.max(1 - normalizedRate, 0.0001);
+      return value / denominator;
+    }
+
+    const WEEKS_PER_YEAR = 52;
+    const MONTHS_PER_YEAR = 12;
+    const BASE_WORK_DAYS_PER_WEEK = 7;
+    const TARGET_NET_DEFAULT = 50000;
+
+    const ACCEPTABLE_INCOME_BASIS_VALUES = ['monthly', 'annual'];
+    let acceptableIncomeBasis = 'monthly';
+    let acceptableIncomeMinAnnualNet = null;
+    let acceptableIncomeMaxAnnualNet = null;
+    let previousAcceptableIncome = null;
+    let lastActiveMonths = MONTHS_PER_YEAR;
+    let lastWorkingWeeks = WEEKS_PER_YEAR;
+
+    function updateDesiredIncomeTitle() {
+      const isGross = desiredIncomeDisplayMode === 'gross';
+      const title = isGross ? 'Desired Gross Income' : 'Desired Net Income';
+      if (desiredIncomeTitle) {
+        desiredIncomeTitle.textContent = title;
+      }
+      if (desiredIncomeLegend) {
+        desiredIncomeLegend.textContent = isGross ? 'Desired gross income' : 'Desired net income';
+      }
+    }
+
+    function updateDesiredIncomeLabels() {
+      const isGross = desiredIncomeDisplayMode === 'gross';
+      desiredIncomeLabelSpans.forEach(span => {
+        const next = isGross ? span.dataset.grossLabel : span.dataset.netLabel;
+        if (next) {
+          span.textContent = next;
+        }
+      });
+    }
+
+    function updateDesiredIncomeTooltips() {
+      const isGross = desiredIncomeDisplayMode === 'gross';
+      desiredIncomeInfoIcons.forEach(icon => {
+        if (!(icon instanceof HTMLElement)) {
+          return;
+        }
+        const next = isGross ? icon.dataset.grossTooltip : icon.dataset.netTooltip;
+        if (typeof next !== 'string') {
+          return;
+        }
+        icon.dataset.tooltip = next;
+        icon.setAttribute('aria-label', next);
+        const parts = ensureInfoIconTooltip(icon);
+        if (parts && parts.tooltip instanceof HTMLElement) {
+          parts.tooltip.textContent = next;
+        }
+      });
+    }
+
+    function updateAcceptableIncomeBasisLabel() {
+      if (!acceptableIncomeBasisLabel) {
+        return;
+      }
+      const modeLabel = desiredIncomeDisplayMode === 'gross' ? 'Gross' : 'Net';
+      const basisLabel = acceptableIncomeBasis === 'annual' ? 'Annual' : 'Monthly';
+      acceptableIncomeBasisLabel.textContent = `${basisLabel} (${modeLabel})`;
+    }
+
+    function clearDesiredIncomeEditingState() {
+      Object.values(desiredIncomeFieldMap).forEach(field => {
+        if (field instanceof HTMLInputElement) {
+          delete field.dataset.editing;
+        }
+      });
+    }
+
+    function clearAcceptableIncomeEditingState() {
+      [controls.acceptableIncomeMin, controls.acceptableIncomeMax].forEach(field => {
+        if (field instanceof HTMLInputElement) {
+          delete field.dataset.editing;
+        }
+      });
+    }
+
+    function refreshDesiredIncomeDisplay(derivedNetValues, taxRate, options = {}) {
+      const forceUpdate = options.force === true;
+      updateDesiredIncomeTitle();
+      updateDesiredIncomeLabels();
+      updateAcceptableIncomeBasisLabel();
+      updateDesiredIncomeTooltips();
+
+      Object.entries(desiredIncomeFieldMap).forEach(([key, field]) => {
+        if (!(field instanceof HTMLInputElement)) {
+          return;
+        }
+        const isActiveBasis = targetNetBasis === key;
+        let netValue = null;
+        if (isActiveBasis) {
+          const stored = readDesiredIncomeNet(key, null);
+          if (Number.isFinite(stored)) {
+            netValue = stored;
+          } else if (Number.isFinite(derivedNetValues?.[key])) {
+            netValue = derivedNetValues[key];
+            writeDesiredIncomeNet(key, netValue);
+          }
+        } else if (Number.isFinite(derivedNetValues?.[key])) {
+          netValue = derivedNetValues[key];
+          writeDesiredIncomeNet(key, netValue);
+        } else {
+          netValue = null;
+          writeDesiredIncomeNet(key, null);
+        }
+
+        const isEditing = field.dataset.editing === 'true';
+
+        if (!Number.isFinite(netValue)) {
+          if (!isEditing || forceUpdate) {
+            field.value = '';
+          }
+          return;
+        }
+
+        const displayValue = desiredIncomeDisplayMode === 'gross'
+          ? convertNetToGross(netValue, taxRate)
+          : netValue;
+
+        if (isEditing && !forceUpdate) {
+          return;
+        }
+
+        field.value = formatFixed(displayValue, 2);
+      });
+    }
+
+    function refreshAcceptableIncomeDisplay(taxRate, options = {}) {
+      const forceUpdate = options.force === true;
+      updateAcceptableIncomeBasisLabel();
+      const minInput = controls.acceptableIncomeMin instanceof HTMLInputElement
+        ? controls.acceptableIncomeMin
+        : null;
+      const maxInput = controls.acceptableIncomeMax instanceof HTMLInputElement
+        ? controls.acceptableIncomeMax
+        : null;
+      const monthsForRange = lastActiveMonths > 0 ? lastActiveMonths : MONTHS_PER_YEAR;
+
+      const toDisplay = annualNet => {
+        if (!Number.isFinite(annualNet)) {
+          return '';
+        }
+        const netBasis = acceptableIncomeBasis === 'annual'
+          ? annualNet
+          : annualNet / monthsForRange;
+        const value = desiredIncomeDisplayMode === 'gross'
+          ? convertNetToGross(netBasis, taxRate)
+          : netBasis;
+        return Number.isFinite(value) ? formatFixed(value, 2) : '';
+      };
+
+      if (minInput) {
+        if (minInput.dataset.editing === 'true' && !forceUpdate) {
+          // Keep the user's in-progress value.
+        } else {
+          minInput.value = toDisplay(acceptableIncomeMinAnnualNet);
+        }
+      }
+      if (maxInput) {
+        if (maxInput.dataset.editing === 'true' && !forceUpdate) {
+          // Keep the user's in-progress value.
+        } else {
+          maxInput.value = toDisplay(acceptableIncomeMaxAnnualNet);
+        }
+      }
+    }
+
+    function initializeDesiredIncomeDatasets() {
+      Object.entries(desiredIncomeFieldMap).forEach(([key, field]) => {
+        if (!(field instanceof HTMLInputElement)) {
+          return;
+        }
+        const raw = typeof field.value === 'string' ? field.value.trim() : '';
+        if (raw === '') {
+          writeDesiredIncomeNet(key, null);
+          return;
+        }
+        const parsed = Number(raw);
+        if (Number.isFinite(parsed)) {
+          writeDesiredIncomeNet(key, Math.max(parsed, 0));
+        }
+      });
+    }
+
+    function updateDesiredIncomeFromField(basis) {
+      const field = getDesiredIncomeField(basis);
+      if (!(field instanceof HTMLInputElement)) {
+        return;
+      }
+      const raw = typeof field.value === 'string' ? field.value.trim() : '';
+      if (raw === '') {
+        writeDesiredIncomeNet(basis, null);
+        return;
+      }
+      const parsed = Number(raw);
+      if (!Number.isFinite(parsed)) {
+        return;
+      }
+      const taxRate = getCurrentTaxRate();
+      const netValue = desiredIncomeDisplayMode === 'gross'
+        ? convertGrossToNet(parsed, taxRate)
+        : parsed;
+      writeDesiredIncomeNet(basis, Math.max(netValue, 0));
+    }
+
+    function updateAcceptableIncomeFromInput(type) {
+      const input = type === 'min' ? controls.acceptableIncomeMin : controls.acceptableIncomeMax;
+      if (!(input instanceof HTMLInputElement)) {
+        return;
+      }
+      const raw = typeof input.value === 'string' ? input.value.trim() : '';
+      if (raw === '') {
+        if (type === 'min') {
+          acceptableIncomeMinAnnualNet = null;
+        } else {
+          acceptableIncomeMaxAnnualNet = null;
+        }
+        return;
+      }
+      const parsed = Number(raw);
+      if (!Number.isFinite(parsed)) {
+        return;
+      }
+      const taxRate = getCurrentTaxRate();
+      const netValue = desiredIncomeDisplayMode === 'gross'
+        ? convertGrossToNet(parsed, taxRate)
+        : parsed;
+      const normalizedNet = Math.max(netValue, 0);
+      const months = lastActiveMonths > 0 ? lastActiveMonths : MONTHS_PER_YEAR;
+      const annualNet = acceptableIncomeBasis === 'annual'
+        ? normalizedNet
+        : normalizedNet * months;
+      if (type === 'min') {
+        acceptableIncomeMinAnnualNet = Number.isFinite(annualNet) ? annualNet : null;
+      } else {
+        acceptableIncomeMaxAnnualNet = Number.isFinite(annualNet) ? annualNet : null;
+      }
+      previousAcceptableIncome = null;
+    }
+
+    const desiredIncomeTitle = document.getElementById('desired-income-title');
+    const desiredIncomeLegend = document.getElementById('section-desired-income-legend');
+    const acceptableIncomeBasisLabel = document.getElementById('acceptable-income-current-basis');
+    const desiredIncomeLabelSpans = Array.from(
+      document.querySelectorAll('#section-desired-income .label-text[data-net-label][data-gross-label]')
+    );
+    const desiredIncomeInfoIcons = Array.from(
+      document.querySelectorAll('#section-desired-income .info-icon[data-net-tooltip][data-gross-tooltip]')
+    );
 
     const fixedCostFields = {
       location: {
@@ -3125,6 +3685,11 @@
     let persistenceEnabled = false;
     let persistableInputsCache = null;
 
+    initializeDesiredIncomeDatasets();
+    updateDesiredIncomeTitle();
+    updateDesiredIncomeLabels();
+    updateAcceptableIncomeBasisLabel();
+
     function getPersistableInputs() {
       if (persistableInputsCache) {
         return persistableInputsCache;
@@ -3153,6 +3718,19 @@
         return accumulator;
       }, {});
       values[PERSISTED_TARGET_NET_BASIS_KEY] = targetNetBasis;
+      values[PERSISTED_DESIRED_INCOME_DISPLAY_KEY] = desiredIncomeDisplayMode;
+      values[PERSISTED_DESIRED_INCOME_LOCK_KEY] = desiredIncomeLockedAsGross;
+      values[PERSISTED_ACCEPTABLE_INCOME_MIN_KEY] = Number.isFinite(acceptableIncomeMinAnnualNet)
+        ? acceptableIncomeMinAnnualNet
+        : null;
+      values[PERSISTED_ACCEPTABLE_INCOME_MAX_KEY] = Number.isFinite(acceptableIncomeMaxAnnualNet)
+        ? acceptableIncomeMaxAnnualNet
+        : null;
+      values[PERSISTED_ACCEPTABLE_INCOME_BASIS_KEY] = acceptableIncomeBasis;
+      Object.keys(desiredIncomeFieldMap).forEach(key => {
+        const netValue = readDesiredIncomeNet(key, null);
+        values[`__desiredIncomeNet_${key}`] = Number.isFinite(netValue) ? netValue : null;
+      });
       return values;
     }
 
@@ -3200,6 +3778,19 @@
       if (typeof storedBasis === 'string' && TARGET_NET_BASIS_VALUES.includes(storedBasis)) {
         targetNetBasis = storedBasis;
       }
+      const storedDisplay = values[PERSISTED_DESIRED_INCOME_DISPLAY_KEY];
+      if (storedDisplay === 'gross' || storedDisplay === 'net') {
+        desiredIncomeDisplayMode = storedDisplay;
+      }
+      desiredIncomeLockedAsGross = Boolean(values[PERSISTED_DESIRED_INCOME_LOCK_KEY]);
+      const storedAcceptableBasis = values[PERSISTED_ACCEPTABLE_INCOME_BASIS_KEY];
+      if (typeof storedAcceptableBasis === 'string' && ACCEPTABLE_INCOME_BASIS_VALUES.includes(storedAcceptableBasis)) {
+        acceptableIncomeBasis = storedAcceptableBasis;
+      }
+      const storedAcceptableMin = Number(values[PERSISTED_ACCEPTABLE_INCOME_MIN_KEY]);
+      acceptableIncomeMinAnnualNet = Number.isFinite(storedAcceptableMin) ? storedAcceptableMin : null;
+      const storedAcceptableMax = Number(values[PERSISTED_ACCEPTABLE_INCOME_MAX_KEY]);
+      acceptableIncomeMaxAnnualNet = Number.isFinite(storedAcceptableMax) ? storedAcceptableMax : null;
       const inputs = getPersistableInputs();
       inputs.forEach(input => {
         if (!(input instanceof HTMLInputElement) || !input.id) {
@@ -3217,6 +3808,37 @@
             : String(storedValue);
         }
       });
+      Object.keys(desiredIncomeFieldMap).forEach(key => {
+        const storedNetKey = `__desiredIncomeNet_${key}`;
+        const storedNet = Number(values[storedNetKey]);
+        if (Number.isFinite(storedNet)) {
+          writeDesiredIncomeNet(key, Math.max(storedNet, 0));
+          return;
+        }
+        const field = getDesiredIncomeField(key);
+        if (!(field instanceof HTMLInputElement)) {
+          writeDesiredIncomeNet(key, null);
+          return;
+        }
+        const raw = typeof field.value === 'string' ? field.value.trim() : '';
+        if (raw === '') {
+          writeDesiredIncomeNet(key, null);
+          return;
+        }
+        const parsed = Number(raw);
+        if (!Number.isFinite(parsed)) {
+          writeDesiredIncomeNet(key, null);
+          return;
+        }
+        const taxRate = getCurrentTaxRate();
+        const netValue = desiredIncomeDisplayMode === 'gross'
+          ? convertGrossToNet(parsed, taxRate)
+          : parsed;
+        writeDesiredIncomeNet(key, Math.max(netValue, 0));
+      });
+      updateDesiredIncomeTitle();
+      updateDesiredIncomeLabels();
+      updateAcceptableIncomeBasisLabel();
       updateFixedCostTotalDisplay();
       if (!skipRender) {
         render();
@@ -3479,11 +4101,6 @@
       }
     });
 
-    const WEEKS_PER_YEAR = 52;
-    const MONTHS_PER_YEAR = 12;
-    const BASE_WORK_DAYS_PER_WEEK = 7;
-    const TARGET_NET_DEFAULT = 50000;
-
     function formatFixed(value, fractionDigits = 1) {
       const fixed = value.toFixed(fractionDigits);
       return fixed
@@ -3504,6 +4121,11 @@
         return fallback;
       }
       return Math.min(Math.max(parsed, min), max);
+    }
+
+    function getCurrentTaxRate() {
+      const percent = Math.min(Math.max(parseNumber(controls.taxRate?.value, 40), 0), 99.9);
+      return percent / 100;
     }
 
     function parseList(value) {
@@ -3718,71 +4340,81 @@
       );
       const workingDaysPerYear = workingWeeks * workingDaysPerWeek;
 
+      lastActiveMonths = activeMonths;
+      lastWorkingWeeks = workingWeeks;
+
       const defaultTargetNetWeek = workingWeeks > 0 ? TARGET_NET_DEFAULT / workingWeeks : TARGET_NET_DEFAULT;
       const defaultTargetNetMonth = activeMonths > 0 ? TARGET_NET_DEFAULT / activeMonths : TARGET_NET_DEFAULT;
       const defaultTargetNetAverageWeek = TARGET_NET_DEFAULT / WEEKS_PER_YEAR;
       const defaultTargetNetAverageMonth = TARGET_NET_DEFAULT / MONTHS_PER_YEAR;
 
-      const targetNetYearInput = Math.max(parseNumber(controls.targetNet.value, TARGET_NET_DEFAULT), 0);
-      const targetNetWeekInput = Math.max(parseNumber(controls.targetNetWeek.value, defaultTargetNetWeek), 0);
-      const targetNetMonthInput = Math.max(parseNumber(controls.targetNetMonth.value, defaultTargetNetMonth), 0);
-      const targetNetAverageWeekInput = Math.max(
-        parseNumber(controls.targetNetAverageWeek.value, defaultTargetNetAverageWeek),
-        0
-      );
-      const targetNetAverageMonthInput = Math.max(
-        parseNumber(controls.targetNetAverageMonth.value, defaultTargetNetAverageMonth),
-        0
-      );
+      const storedYearNet = readDesiredIncomeNet('year', null);
+      const storedWeekNet = readDesiredIncomeNet('week', null);
+      const storedMonthNet = readDesiredIncomeNet('month', null);
+      const storedAvgWeekNet = readDesiredIncomeNet('avgWeek', null);
+      const storedAvgMonthNet = readDesiredIncomeNet('avgMonth', null);
+
+      const netYearValue = Number.isFinite(storedYearNet) ? Math.max(storedYearNet, 0) : TARGET_NET_DEFAULT;
+      const netWeekValue = Number.isFinite(storedWeekNet)
+        ? Math.max(storedWeekNet, 0)
+        : defaultTargetNetWeek;
+      const netMonthValue = Number.isFinite(storedMonthNet)
+        ? Math.max(storedMonthNet, 0)
+        : defaultTargetNetMonth;
+      const netAvgWeekValue = Number.isFinite(storedAvgWeekNet)
+        ? Math.max(storedAvgWeekNet, 0)
+        : defaultTargetNetAverageWeek;
+      const netAvgMonthValue = Number.isFinite(storedAvgMonthNet)
+        ? Math.max(storedAvgMonthNet, 0)
+        : defaultTargetNetAverageMonth;
 
       const hasWorkingWeeks = workingWeeks > 0;
       const hasActiveMonths = activeMonths > 0;
 
       let targetNet;
       if (targetNetBasis === 'week') {
-        targetNet = hasWorkingWeeks ? targetNetWeekInput * workingWeeks : targetNetYearInput;
+        targetNet = hasWorkingWeeks ? netWeekValue * workingWeeks : netYearValue;
       } else if (targetNetBasis === 'month') {
-        targetNet = hasActiveMonths ? targetNetMonthInput * activeMonths : targetNetYearInput;
+        targetNet = hasActiveMonths ? netMonthValue * activeMonths : netYearValue;
       } else if (targetNetBasis === 'avgWeek') {
-        targetNet = targetNetAverageWeekInput * WEEKS_PER_YEAR;
+        targetNet = netAvgWeekValue * WEEKS_PER_YEAR;
       } else if (targetNetBasis === 'avgMonth') {
-        targetNet = targetNetAverageMonthInput * MONTHS_PER_YEAR;
+        targetNet = netAvgMonthValue * MONTHS_PER_YEAR;
       } else {
-        targetNet = targetNetYearInput;
+        targetNet = netYearValue;
       }
 
-      targetNet = Math.max(targetNet, 0);
+      targetNet = Number.isFinite(targetNet) ? Math.max(targetNet, 0) : TARGET_NET_DEFAULT;
 
       const targetNetPerWeek = hasWorkingWeeks ? targetNet / workingWeeks : null;
       const targetNetPerMonth = hasActiveMonths ? targetNet / activeMonths : null;
       const targetNetAveragePerWeek = targetNet / WEEKS_PER_YEAR;
       const targetNetAveragePerMonth = targetNet / MONTHS_PER_YEAR;
 
-      controls.targetNet.value = formatFixed(targetNet, 2);
+      const derivedNetValues = {
+        year: targetNet,
+        week: targetNetPerWeek,
+        month: targetNetPerMonth,
+        avgWeek: targetNetAveragePerWeek,
+        avgMonth: targetNetAveragePerMonth
+      };
 
-      const weekDisplayValue = targetNetBasis === 'week' ? targetNetWeekInput : targetNetPerWeek;
-      controls.targetNetWeek.value = weekDisplayValue == null || !Number.isFinite(weekDisplayValue)
-        ? ''
-        : formatFixed(weekDisplayValue, 2);
+      Object.entries(derivedNetValues).forEach(([key, value]) => {
+        if (key === targetNetBasis) {
+          if (!Number.isFinite(readDesiredIncomeNet(key, null)) && Number.isFinite(value)) {
+            writeDesiredIncomeNet(key, value);
+          }
+          return;
+        }
+        if (Number.isFinite(value)) {
+          writeDesiredIncomeNet(key, value);
+        } else {
+          writeDesiredIncomeNet(key, null);
+        }
+      });
 
-      const monthDisplayValue = targetNetBasis === 'month' ? targetNetMonthInput : targetNetPerMonth;
-      controls.targetNetMonth.value = monthDisplayValue == null || !Number.isFinite(monthDisplayValue)
-        ? ''
-        : formatFixed(monthDisplayValue, 2);
-
-      const averageWeekDisplayValue = targetNetBasis === 'avgWeek'
-        ? targetNetAverageWeekInput
-        : targetNetAveragePerWeek;
-      controls.targetNetAverageWeek.value = averageWeekDisplayValue == null || !Number.isFinite(averageWeekDisplayValue)
-        ? ''
-        : formatFixed(averageWeekDisplayValue, 2);
-
-      const averageMonthDisplayValue = targetNetBasis === 'avgMonth'
-        ? targetNetAverageMonthInput
-        : targetNetAveragePerMonth;
-      controls.targetNetAverageMonth.value = averageMonthDisplayValue == null || !Number.isFinite(averageMonthDisplayValue)
-        ? ''
-        : formatFixed(averageMonthDisplayValue, 2);
+      refreshDesiredIncomeDisplay(derivedNetValues, taxRate);
+      refreshAcceptableIncomeDisplay(taxRate);
 
       controls.taxRate.value = formatFixed(taxRate * 100, 1);
       controls.fixedCosts.value = formatFixed(fixedCosts, 2);
@@ -4148,6 +4780,74 @@
       return profitBeforeTax * (1 - effectiveTaxRate);
     }
 
+    function shouldHighlightIncome({ monthlyNet, annualNet }, options = {}) {
+      const {
+        acceptableIncome = null,
+        displayMode = 'net',
+        taxRate = 0,
+        activeMonths = MONTHS_PER_YEAR
+      } = options;
+
+      if (!acceptableIncome || typeof acceptableIncome !== 'object') {
+        return false;
+      }
+
+      const { basis, minAnnualNet, maxAnnualNet } = acceptableIncome;
+      const hasMin = Number.isFinite(minAnnualNet);
+      const hasMax = Number.isFinite(maxAnnualNet);
+
+      if (!basis || (!hasMin && !hasMax)) {
+        return false;
+      }
+
+      const normalizedTaxRate = Math.min(Math.max(taxRate, 0), 0.9999);
+      const denominator = Math.max(1 - normalizedTaxRate, 0.0001);
+      const monthsForRange = activeMonths > 0 ? activeMonths : MONTHS_PER_YEAR;
+
+      const convertNetToDisplay = value => {
+        if (!Number.isFinite(value)) {
+          return null;
+        }
+        return displayMode === 'gross' ? value / denominator : value;
+      };
+
+      if (basis === 'annual') {
+        if (!Number.isFinite(annualNet)) {
+          return false;
+        }
+        const valueDisplay = convertNetToDisplay(annualNet);
+        const minDisplay = hasMin ? convertNetToDisplay(minAnnualNet) : null;
+        const maxDisplay = hasMax ? convertNetToDisplay(maxAnnualNet) : null;
+        if (!Number.isFinite(valueDisplay)) {
+          return false;
+        }
+        if (Number.isFinite(minDisplay) && valueDisplay < minDisplay) {
+          return false;
+        }
+        if (Number.isFinite(maxDisplay) && valueDisplay > maxDisplay) {
+          return false;
+        }
+        return true;
+      }
+
+      if (!Number.isFinite(monthlyNet)) {
+        return false;
+      }
+      const valueDisplay = convertNetToDisplay(monthlyNet);
+      const minDisplay = hasMin ? convertNetToDisplay(minAnnualNet / monthsForRange) : null;
+      const maxDisplay = hasMax ? convertNetToDisplay(maxAnnualNet / monthsForRange) : null;
+      if (!Number.isFinite(valueDisplay)) {
+        return false;
+      }
+      if (Number.isFinite(minDisplay) && valueDisplay < minDisplay) {
+        return false;
+      }
+      if (Number.isFinite(maxDisplay) && valueDisplay > maxDisplay) {
+        return false;
+      }
+      return true;
+    }
+
     function buildPricingTable(data, symbol, bufferPercent, options = {}) {
       if (!data.length) {
         return `<div class="card"><p class="status-message">No valid combinations available.</p></div>`;
@@ -4157,7 +4857,11 @@
         mode = PRICING_MODE_TARGET,
         showBasePrices: showBase = false,
         minLessonPrice = null,
-        maxLessonPrice = null
+        maxLessonPrice = null,
+        acceptableIncome: acceptableIncomeRange = null,
+        desiredIncomeDisplayMode: incomeDisplayMode = 'net',
+        taxRate: incomeTaxRate = 0,
+        activeMonths: incomeActiveMonths = MONTHS_PER_YEAR
       } = options;
       const formattedBuffer = formatFixed(bufferPercent, 1);
       const showBasePricesActive = mode === PRICING_MODE_TARGET && showBase;
@@ -4214,12 +4918,39 @@
                   ? formatCurrency(symbol, col.manualNet.bufferedAnnual)
                   : '—';
 
+                const highlightBase = shouldHighlightIncome(
+                  { monthlyNet: col.manualNet.monthly, annualNet: col.manualNet.annual },
+                  {
+                    acceptableIncome: acceptableIncomeRange,
+                    displayMode: incomeDisplayMode,
+                    taxRate: incomeTaxRate,
+                    activeMonths: incomeActiveMonths
+                  }
+                );
+                const highlightBuffered = shouldHighlightIncome(
+                  {
+                    monthlyNet: col.manualNet.bufferedMonthly,
+                    annualNet: col.manualNet.bufferedAnnual
+                  },
+                  {
+                    acceptableIncome: acceptableIncomeRange,
+                    displayMode: incomeDisplayMode,
+                    taxRate: incomeTaxRate,
+                    activeMonths: incomeActiveMonths
+                  }
+                );
+
+                const baseButtonClass = highlightBase ? 'price-line price-line--acceptable' : 'price-line';
+                const bufferedButtonClass = highlightBuffered
+                  ? 'price-line buffered price-line--acceptable'
+                  : 'price-line buffered';
+
                 return `
                 <td>
                   <div class="price-pair">
                     <button
                       type="button"
-                      class="price-line"
+                      class="${baseButtonClass}"
                       data-row="${rowIndex}"
                       data-column="${columnIndex}"
                       data-variant="base"
@@ -4230,7 +4961,7 @@
                     </button>
                     <button
                       type="button"
-                      class="price-line buffered"
+                      class="${bufferedButtonClass}"
                       data-row="${rowIndex}"
                       data-column="${columnIndex}"
                       data-variant="buffered"
@@ -4681,50 +5412,54 @@
       const { pricingData, bufferPercent, revenueNeeded, mode, manualNetSummary } = computeTables(inputs);
 
       if (mode === PRICING_MODE_LESSON && manualNetSummary) {
-        if (controls.targetNet instanceof HTMLInputElement && Number.isFinite(manualNetSummary.annual)) {
-          controls.targetNet.value = formatFixed(manualNetSummary.annual, 2);
+        if (Number.isFinite(manualNetSummary.annual)) {
+          writeDesiredIncomeNet('year', Math.max(manualNetSummary.annual, 0));
           inputs.targetNet = manualNetSummary.annual;
         }
 
-        if (controls.targetNetWeek instanceof HTMLInputElement) {
-          if (Number.isFinite(manualNetSummary.weekly)) {
-            controls.targetNetWeek.value = formatFixed(manualNetSummary.weekly, 2);
-            inputs.targetNetPerWeek = manualNetSummary.weekly;
-          } else {
-            controls.targetNetWeek.value = '';
-            inputs.targetNetPerWeek = null;
-          }
+        if (Number.isFinite(manualNetSummary.weekly)) {
+          writeDesiredIncomeNet('week', Math.max(manualNetSummary.weekly, 0));
+          inputs.targetNetPerWeek = manualNetSummary.weekly;
+        } else {
+          writeDesiredIncomeNet('week', null);
+          inputs.targetNetPerWeek = null;
         }
 
-        if (controls.targetNetMonth instanceof HTMLInputElement) {
-          if (Number.isFinite(manualNetSummary.monthly)) {
-            controls.targetNetMonth.value = formatFixed(manualNetSummary.monthly, 2);
-            inputs.targetNetPerMonth = manualNetSummary.monthly;
-          } else {
-            controls.targetNetMonth.value = '';
-            inputs.targetNetPerMonth = null;
-          }
+        if (Number.isFinite(manualNetSummary.monthly)) {
+          writeDesiredIncomeNet('month', Math.max(manualNetSummary.monthly, 0));
+          inputs.targetNetPerMonth = manualNetSummary.monthly;
+        } else {
+          writeDesiredIncomeNet('month', null);
+          inputs.targetNetPerMonth = null;
         }
 
-        if (controls.targetNetAverageWeek instanceof HTMLInputElement) {
-          if (Number.isFinite(manualNetSummary.averageWeekly)) {
-            controls.targetNetAverageWeek.value = formatFixed(manualNetSummary.averageWeekly, 2);
-            inputs.targetNetAveragePerWeek = manualNetSummary.averageWeekly;
-          } else {
-            controls.targetNetAverageWeek.value = '';
-            inputs.targetNetAveragePerWeek = null;
-          }
+        if (Number.isFinite(manualNetSummary.averageWeekly)) {
+          writeDesiredIncomeNet('avgWeek', Math.max(manualNetSummary.averageWeekly, 0));
+          inputs.targetNetAveragePerWeek = manualNetSummary.averageWeekly;
+        } else {
+          writeDesiredIncomeNet('avgWeek', null);
+          inputs.targetNetAveragePerWeek = null;
         }
 
-        if (controls.targetNetAverageMonth instanceof HTMLInputElement) {
-          if (Number.isFinite(manualNetSummary.averageMonthly)) {
-            controls.targetNetAverageMonth.value = formatFixed(manualNetSummary.averageMonthly, 2);
-            inputs.targetNetAveragePerMonth = manualNetSummary.averageMonthly;
-          } else {
-            controls.targetNetAverageMonth.value = '';
-            inputs.targetNetAveragePerMonth = null;
-          }
+        if (Number.isFinite(manualNetSummary.averageMonthly)) {
+          writeDesiredIncomeNet('avgMonth', Math.max(manualNetSummary.averageMonthly, 0));
+          inputs.targetNetAveragePerMonth = manualNetSummary.averageMonthly;
+        } else {
+          writeDesiredIncomeNet('avgMonth', null);
+          inputs.targetNetAveragePerMonth = null;
         }
+
+        refreshDesiredIncomeDisplay(
+          {
+            year: manualNetSummary.annual,
+            week: manualNetSummary.weekly,
+            month: manualNetSummary.monthly,
+            avgWeek: manualNetSummary.averageWeekly,
+            avgMonth: manualNetSummary.averageMonthly
+          },
+          inputs.taxRate
+        );
+        refreshAcceptableIncomeDisplay(inputs.taxRate, { force: true });
       }
 
       latestCurrencySymbol = inputs.currencySymbol;
@@ -4746,7 +5481,15 @@
           mode,
           showBasePrices,
           minLessonPrice: inputs.lessonPriceMin,
-          maxLessonPrice: inputs.lessonPriceMax
+          maxLessonPrice: inputs.lessonPriceMax,
+          acceptableIncome: {
+            basis: acceptableIncomeBasis,
+            minAnnualNet: acceptableIncomeMinAnnualNet,
+            maxAnnualNet: acceptableIncomeMaxAnnualNet
+          },
+          desiredIncomeDisplayMode,
+          taxRate: inputs.taxRate,
+          activeMonths: inputs.activeMonths
         });
         const targetsTable = mode === PRICING_MODE_LESSON
           ? ''
@@ -4928,12 +5671,150 @@
       { control: controls.targetNetAverageMonth, basis: 'avgMonth' }
     ].forEach(({ control, basis }) => {
       if (!(control instanceof HTMLInputElement)) return;
-      const updateBasis = () => {
+      const handleInput = () => {
         targetNetBasis = basis;
+        updateDesiredIncomeFromField(basis);
+        desiredIncomePreviousNetValues = null;
       };
-      control.addEventListener('input', updateBasis);
-      control.addEventListener('change', updateBasis);
+      control.addEventListener('focus', () => {
+        control.dataset.editing = 'true';
+      });
+      control.addEventListener('blur', () => {
+        delete control.dataset.editing;
+      });
+      control.addEventListener('input', handleInput);
+      control.addEventListener('change', () => {
+        handleInput();
+        const netValue = readDesiredIncomeNet(basis, null);
+        if (Number.isFinite(netValue)) {
+          const displayValue = desiredIncomeDisplayMode === 'gross'
+            ? convertNetToGross(netValue, getCurrentTaxRate())
+            : netValue;
+          control.value = formatFixed(displayValue, 2);
+        }
+      });
     });
+
+    if (controls.acceptableIncomeMin instanceof HTMLInputElement) {
+      const updateMin = () => {
+        updateAcceptableIncomeFromInput('min');
+      };
+      controls.acceptableIncomeMin.addEventListener('focus', () => {
+        controls.acceptableIncomeMin.dataset.editing = 'true';
+      });
+      controls.acceptableIncomeMin.addEventListener('blur', () => {
+        delete controls.acceptableIncomeMin.dataset.editing;
+      });
+      controls.acceptableIncomeMin.addEventListener('input', updateMin);
+      controls.acceptableIncomeMin.addEventListener('change', () => {
+        updateMin();
+        refreshAcceptableIncomeDisplay(getCurrentTaxRate(), { force: true });
+      });
+    }
+
+    if (controls.acceptableIncomeMax instanceof HTMLInputElement) {
+      const updateMax = () => {
+        updateAcceptableIncomeFromInput('max');
+      };
+      controls.acceptableIncomeMax.addEventListener('focus', () => {
+        controls.acceptableIncomeMax.dataset.editing = 'true';
+      });
+      controls.acceptableIncomeMax.addEventListener('blur', () => {
+        delete controls.acceptableIncomeMax.dataset.editing;
+      });
+      controls.acceptableIncomeMax.addEventListener('input', updateMax);
+      controls.acceptableIncomeMax.addEventListener('change', () => {
+        updateMax();
+        refreshAcceptableIncomeDisplay(getCurrentTaxRate(), { force: true });
+      });
+    }
+
+    const acceptableBasisControls = [
+      { control: controls.acceptableIncomeBasisMonthly, value: 'monthly' },
+      { control: controls.acceptableIncomeBasisAnnual, value: 'annual' }
+    ];
+
+    acceptableBasisControls.forEach(({ control, value }) => {
+      if (!(control instanceof HTMLInputElement)) {
+        return;
+      }
+      control.addEventListener('change', () => {
+        if (!control.checked) {
+          return;
+        }
+        acceptableIncomeBasis = value;
+        clearAcceptableIncomeEditingState();
+        refreshAcceptableIncomeDisplay(getCurrentTaxRate(), { force: true });
+      });
+    });
+
+    if (controls.desiredIncomeToggleDisplay instanceof HTMLButtonElement) {
+      controls.desiredIncomeToggleDisplay.addEventListener('click', () => {
+        desiredIncomeDisplayMode = desiredIncomeDisplayMode === 'gross' ? 'net' : 'gross';
+        if (!desiredIncomeLockedAsGross) {
+          desiredIncomePreviousNetValues = null;
+        }
+        clearDesiredIncomeEditingState();
+        clearAcceptableIncomeEditingState();
+        updateDesiredIncomeTitle();
+        updateDesiredIncomeLabels();
+        updateAcceptableIncomeBasisLabel();
+        updateDesiredIncomeTooltips();
+        render();
+      });
+    }
+
+    if (controls.desiredIncomeToggleInterpretation instanceof HTMLButtonElement) {
+      controls.desiredIncomeToggleInterpretation.addEventListener('click', () => {
+        const taxRate = getCurrentTaxRate();
+        if (!desiredIncomeLockedAsGross) {
+          desiredIncomePreviousNetValues = captureDesiredIncomeNetValues();
+          previousAcceptableIncome = {
+            min: acceptableIncomeMinAnnualNet,
+            max: acceptableIncomeMaxAnnualNet
+          };
+          desiredIncomeDisplayMode = 'gross';
+          Object.keys(desiredIncomeFieldMap).forEach(key => {
+            updateDesiredIncomeFromField(key);
+          });
+          updateAcceptableIncomeFromInput('min');
+          updateAcceptableIncomeFromInput('max');
+          desiredIncomeLockedAsGross = true;
+          clearDesiredIncomeEditingState();
+          clearAcceptableIncomeEditingState();
+          updateDesiredIncomeTitle();
+          updateDesiredIncomeLabels();
+          updateAcceptableIncomeBasisLabel();
+          updateDesiredIncomeTooltips();
+          refreshAcceptableIncomeDisplay(taxRate, { force: true });
+          render();
+        } else {
+          desiredIncomeLockedAsGross = false;
+          desiredIncomeDisplayMode = 'net';
+          if (desiredIncomePreviousNetValues) {
+            restoreDesiredIncomeNetValues(desiredIncomePreviousNetValues);
+          }
+          if (previousAcceptableIncome) {
+            acceptableIncomeMinAnnualNet = Number.isFinite(previousAcceptableIncome.min)
+              ? previousAcceptableIncome.min
+              : null;
+            acceptableIncomeMaxAnnualNet = Number.isFinite(previousAcceptableIncome.max)
+              ? previousAcceptableIncome.max
+              : null;
+          }
+          desiredIncomePreviousNetValues = null;
+          previousAcceptableIncome = null;
+          clearDesiredIncomeEditingState();
+          clearAcceptableIncomeEditingState();
+          updateDesiredIncomeTitle();
+          updateDesiredIncomeLabels();
+          updateAcceptableIncomeBasisLabel();
+          updateDesiredIncomeTooltips();
+          refreshAcceptableIncomeDisplay(taxRate, { force: true });
+          render();
+        }
+      });
+    }
 
     Object.values(controls).forEach(control => {
       if (!(control instanceof HTMLInputElement)) return;
