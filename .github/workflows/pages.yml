@@ -88,47 +88,134 @@ jobs:
       - name: Comment preview status on PR
         id: preview_comment
         uses: actions/github-script@v7
+        env:
+          DIR: ${{ steps.pr.outputs.dir }}
         with:
           script: |
             const dir = process.env.DIR;
+            if (!dir) {
+              core.setFailed('Preview directory not provided.');
+              return;
+            }
+
             const base = `https://${context.repo.owner}.github.io/${context.repo.repo}`;
             const url = `${base}/${dir}/`;
-            const { data } = await github.rest.issues.createComment({
+            const marker = `<!-- preview-dir:${dir} -->`;
+            const preparingBody = `${marker}\n\u23F3 Preview is preparing. I'll post the ready link here once it's live.`;
+            const botLogin = 'github-actions[bot]';
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body: `\u23F3 Preview is preparing. I'll post the ready link here once it's live.`
+              per_page: 100
             });
-            return { commentId: data.id, url };
-        env:
-          DIR: ${{ steps.pr.outputs.dir }}
+
+            const existing = comments.find((comment) => {
+              if (comment.user?.login !== botLogin) {
+                return false;
+              }
+              return comment.body?.includes(marker);
+            });
+
+            let commentId;
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body: preparingBody
+              });
+              commentId = existing.id;
+              core.info(`Updated existing preview comment (${commentId}) with preparing message.`);
+            } else {
+              const { data } = await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: preparingBody
+              });
+              commentId = data.id;
+              core.info(`Created preview comment (${commentId}) with preparing message.`);
+            }
+
+            core.setOutput('comment-id', String(commentId));
+            core.setOutput('preview-url', url);
+            core.setOutput('preview-dir', dir);
+            core.setOutput('comment-marker', marker);
 
       - name: Wait for preview deployment
         id: wait_for_preview
         uses: actions/github-script@v7
         env:
-          PREVIEW_INFO: ${{ steps.preview_comment.outputs.result }}
-          DELAY_MS: 3000
-          MAX_ATTEMPTS: 20
+          COMMENT_ID: ${{ steps.preview_comment.outputs.comment-id }}
+          PREVIEW_URL: ${{ steps.preview_comment.outputs.preview-url }}
+          PREVIEW_DIR: ${{ steps.preview_comment.outputs.preview-dir }}
+          COMMENT_MARKER: ${{ steps.preview_comment.outputs.comment-marker }}
+          DELAY_MS: 5000
+          MAX_ATTEMPTS: 60
         with:
           script: |
-            const { commentId, url } = JSON.parse(process.env.PREVIEW_INFO);
+            const commentId = process.env.COMMENT_ID;
+            const url = process.env.PREVIEW_URL;
+            const dir = process.env.PREVIEW_DIR;
+            const marker = process.env.COMMENT_MARKER || '';
+            if (!commentId || !url || !dir) {
+              core.setFailed('Preview polling is missing required context.');
+              return;
+            }
+
             const maxAttempts = Number(process.env.MAX_ATTEMPTS) || 20;
             const delayMs = Number(process.env.DELAY_MS) || 3000;
+            const trimmedDir = dir.replace(/^\/+/, '').replace(/\/+$/, '');
+            const contentPath = `${trimmedDir}/index.html`;
 
             const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+            let attempts = 0;
+            let ready = false;
+            let published = false;
+            let lastError = '';
+
             for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+              attempts = attempt;
+              let contentReady = false;
+
               try {
-                const checkUrl = `${url}?nocache=${Date.now()}`;
-                const response = await fetch(checkUrl, { method: 'GET', redirect: 'follow' });
-                if (response.ok) {
-                  core.info(`Preview became available after ${attempt} attempt(s).`);
-                  return { commentId, url, ready: true, attempts: attempt };
-                }
-                core.info(`Attempt ${attempt}: received status ${response.status}.`);
+                await github.rest.repos.getContent({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  path: contentPath,
+                  ref: 'gh-pages'
+                });
+                contentReady = true;
+                published = true;
+                core.info(`Attempt ${attempt}: preview files found on gh-pages.`);
               } catch (error) {
-                core.info(`Attempt ${attempt}: encountered error ${error}.`);
+                if (error.status === 404) {
+                  core.info(`Attempt ${attempt}: preview files not present yet.`);
+                } else {
+                  const message = error?.message || String(error);
+                  lastError = message;
+                  core.warning(`Attempt ${attempt}: error while checking preview files: ${message}`);
+                }
+              }
+
+              if (contentReady) {
+                try {
+                  const checkUrl = `${url}?nocache=${Date.now()}`;
+                  const response = await fetch(checkUrl, { method: 'GET', redirect: 'follow' });
+                  if (response.ok) {
+                    core.info(`Attempt ${attempt}: preview responded with status ${response.status}.`);
+                    ready = true;
+                    break;
+                  }
+                  core.info(`Attempt ${attempt}: preview responded with status ${response.status}.`);
+                } catch (fetchError) {
+                  const message = fetchError?.message || String(fetchError);
+                  lastError = message;
+                  core.info(`Attempt ${attempt}: preview fetch failed with ${message}.`);
+                }
               }
 
               if (attempt < maxAttempts) {
@@ -136,23 +223,54 @@ jobs:
               }
             }
 
-            core.warning(`Preview was not ready after ${maxAttempts} attempt(s).`);
-            return { commentId, url, ready: false, attempts: maxAttempts };
+            let bodyLine;
+            if (ready) {
+              bodyLine = `\uD83D\uDD0D Preview ready: ${url}`;
+              core.info(`Preview became available after ${attempts} attempt(s).`);
+            } else if (published) {
+              bodyLine = `\u26A0\uFE0F Preview published but may still be propagating. You can try it here: ${url}`;
+              core.warning(`Preview files published, but HTTP checks did not succeed after ${attempts} attempt(s).`);
+            } else {
+              bodyLine = `\u26A0\uFE0F Preview is still preparing. You can check back soon: ${url}`;
+              core.warning(`Preview was not ready after ${attempts} attempt(s).`);
+            }
+
+            const finalBody = marker ? `${marker}\n${bodyLine}` : bodyLine;
+
+            core.setOutput('comment-id', commentId);
+            core.setOutput('final-body', finalBody);
+            core.setOutput('ready', ready ? 'true' : 'false');
+            core.setOutput('published', published ? 'true' : 'false');
+            core.setOutput('attempts', String(attempts));
+            if (lastError) {
+              core.setOutput('last-error', lastError);
+            }
 
       - name: Update preview comment with final status
         if: always()
         uses: actions/github-script@v7
         env:
-          PREVIEW_RESULT: ${{ steps.wait_for_preview.outputs.result }}
+          COMMENT_ID: ${{ steps.wait_for_preview.outputs.comment-id || steps.preview_comment.outputs.comment-id }}
+          FINAL_BODY: ${{ steps.wait_for_preview.outputs.final-body }}
+          FALLBACK_URL: ${{ steps.preview_comment.outputs.preview-url }}
+          COMMENT_MARKER: ${{ steps.preview_comment.outputs.comment-marker }}
         with:
           script: |
-            const { commentId, url, ready } = JSON.parse(process.env.PREVIEW_RESULT);
-            const body = ready
-              ? `\uD83D\uDD0D Preview ready: ${url}`
-              : `\u26A0\uFE0F Preview is still preparing. You can check back soon: ${url}`;
+            const commentId = process.env.COMMENT_ID;
+            const fallbackUrl = process.env.FALLBACK_URL;
+            const marker = process.env.COMMENT_MARKER || '';
+            if (!commentId) {
+              core.warning('No preview comment id available. Skipping update.');
+              return;
+            }
+
+            const bodyLine = process.env.FINAL_BODY?.trim()
+              ? process.env.FINAL_BODY
+              : (marker ? `${marker}\n\u26A0\uFE0F Preview is still preparing. You can check back soon: ${fallbackUrl}` : `\u26A0\uFE0F Preview is still preparing. You can check back soon: ${fallbackUrl}`);
+
             await github.rest.issues.updateComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              comment_id: commentId,
-              body
+              comment_id: Number(commentId),
+              body: bodyLine
             });
