@@ -1553,6 +1553,11 @@
       color: var(--text-muted);
     }
 
+    .price-line .price-tertiary {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
     .price-value--out-of-range {
       color: var(--price-out-of-range) !important;
     }
@@ -2059,9 +2064,9 @@
           </fieldset>
 
           <fieldset class="control-section" data-collapsible>
-            <legend class="section-legend visually-hidden" id="section-safety-margin-legend">Safety margin</legend>
+            <legend class="section-legend visually-hidden" id="section-safety-margin-legend">Extra safety margin</legend>
             <div class="section-header">
-              <span class="section-title" aria-hidden="true">Safety margin</span>
+              <span class="section-title" aria-hidden="true">EXTRA SAFETY MARGIN</span>
               <button
                 type="button"
                 class="section-toggle section-toggle--top"
@@ -2075,18 +2080,18 @@
             </div>
             <div class="section-body" id="section-safety-margin">
               <p class="field-note">
-                Add a percentage cushion on top of your desired net income. The buffered line in the results uses this value to suggest a price that covers surprises.
+                This % adds an extra percentage cushion <strong>on top of your desired specified income</strong>. The "buffered" row in the results table uses this value to suggest a lesson price that covers surprises.
               </p>
               <div class="control">
                 <label for="buffer">
-                  <span class="label-text">Safety margin cushion (%)</span>
+                  <span class="label-text">Extra safety margin (%)</span>
                   <span
                     class="info-icon"
                     tabindex="0"
                     role="button"
                     aria-expanded="false"
-                    aria-label="Adds a cushion to your desired income. The buffered pricing line uses this percentage."
-                    data-tooltip="Adds a cushion to your desired income. The buffered pricing line uses this percentage."
+                    aria-label="Adds an extra cushion on top of your desired income. The buffered pricing line uses this percentage."
+                    data-tooltip="Adds an extra cushion on top of your desired income. The buffered pricing line uses this percentage."
                   >ℹ️</span>
                 </label>
                 <input type="number" id="buffer" value="15" min="0" step="1" inputmode="decimal" />
@@ -2403,6 +2408,20 @@
                   <span class="info-icon" tabindex="0" role="button" aria-expanded="false" aria-label="Comma-separated integers or ranges (e.g. 5-12)." data-tooltip="Comma-separated integers or ranges (e.g. 5-12).">ℹ️</span>
                 </label>
                 <input type="text" id="students-per-class" value="4,6,8" autocomplete="off" />
+              </div>
+              <div class="control">
+                <label for="hours-per-lesson">
+                  <span class="label-text">Hours per lesson</span>
+                  <span
+                    class="info-icon"
+                    tabindex="0"
+                    role="button"
+                    aria-expanded="false"
+                    aria-label="Length of each lesson in hours (e.g. 1.5)."
+                    data-tooltip="Length of each lesson in hours (e.g. 1.5)."
+                  >ℹ️</span>
+                </label>
+                <input type="number" id="hours-per-lesson" value="1" min="0.25" step="0.25" inputmode="decimal" />
               </div>
               <div class="section-footer">
                 <button
@@ -3295,6 +3314,8 @@
     let desiredIncomeLockedGrossValues = null;
     let acceptableIncomeLockedGrossMin = null;
     let acceptableIncomeLockedGrossMax = null;
+    let acceptableIncomeLockedGrossMinBasis = null;
+    let acceptableIncomeLockedGrossMaxBasis = null;
     let desiredIncomePreviousNetValues = null;
     const PRICING_MODE_TARGET = 'target';
     const PRICING_MODE_LESSON = 'lesson';
@@ -3339,6 +3360,7 @@
       vatRate: document.getElementById('vat-rate'),
       classesPerWeek: document.getElementById('classes-per-week'),
       studentsPerClass: document.getElementById('students-per-class'),
+      hoursPerLesson: document.getElementById('hours-per-lesson'),
       lessonCost: document.getElementById('lesson-cost'),
       lessonPriceMin: document.getElementById('lesson-price-min'),
       lessonPriceMax: document.getElementById('lesson-price-max'),
@@ -3472,34 +3494,45 @@
       desiredIncomeLockedGrossValues = null;
     }
 
-    function setLockedAcceptableIncomeGross(type, value) {
+    function setLockedAcceptableIncomeGross(type, value, basis = acceptableIncomeBasis) {
       if (!desiredIncomeLockedAsGross) {
         return;
       }
+      const normalizedBasis = ACCEPTABLE_INCOME_BASIS_VALUES.includes(basis) ? basis : acceptableIncomeBasis;
       if (!Number.isFinite(value)) {
         if (type === 'min') {
           acceptableIncomeLockedGrossMin = null;
+          acceptableIncomeLockedGrossMinBasis = null;
         } else if (type === 'max') {
           acceptableIncomeLockedGrossMax = null;
+          acceptableIncomeLockedGrossMaxBasis = null;
         }
         return;
       }
       const normalized = Math.max(value, 0);
       if (type === 'min') {
         acceptableIncomeLockedGrossMin = normalized;
+        acceptableIncomeLockedGrossMinBasis = normalizedBasis;
       } else if (type === 'max') {
         acceptableIncomeLockedGrossMax = normalized;
+        acceptableIncomeLockedGrossMaxBasis = normalizedBasis;
       }
     }
 
     function getLockedAcceptableIncomeGross(type) {
       const value = type === 'min' ? acceptableIncomeLockedGrossMin : acceptableIncomeLockedGrossMax;
-      return Number.isFinite(value) ? value : null;
+      const basis = type === 'min' ? acceptableIncomeLockedGrossMinBasis : acceptableIncomeLockedGrossMaxBasis;
+      return {
+        value: Number.isFinite(value) ? value : null,
+        basis: ACCEPTABLE_INCOME_BASIS_VALUES.includes(basis) ? basis : null
+      };
     }
 
     function clearLockedAcceptableIncomeGross() {
       acceptableIncomeLockedGrossMin = null;
       acceptableIncomeLockedGrossMax = null;
+      acceptableIncomeLockedGrossMinBasis = null;
+      acceptableIncomeLockedGrossMaxBasis = null;
     }
 
     function synchronizeLockedDesiredIncomeNetValues(taxRate) {
@@ -3553,7 +3586,7 @@
 
       const months = Number.isFinite(activeMonths) && activeMonths > 0 ? activeMonths : MONTHS_PER_YEAR;
 
-      const convertGrossBasisToAnnualNet = grossValue => {
+      const convertGrossBasisToAnnualNet = (grossValue, basis) => {
         if (!Number.isFinite(grossValue)) {
           return null;
         }
@@ -3561,23 +3594,26 @@
         if (!Number.isFinite(netBasis)) {
           return null;
         }
-        if (acceptableIncomeBasis === 'annual') {
+        const effectiveBasis = ACCEPTABLE_INCOME_BASIS_VALUES.includes(basis)
+          ? basis
+          : acceptableIncomeBasis;
+        if (effectiveBasis === 'annual') {
           return netBasis;
         }
         return netBasis * months;
       };
 
-      const minGross = getLockedAcceptableIncomeGross('min');
+      const { value: minGross, basis: minBasis } = getLockedAcceptableIncomeGross('min');
       if (Number.isFinite(minGross)) {
-        const annualNet = convertGrossBasisToAnnualNet(minGross);
+        const annualNet = convertGrossBasisToAnnualNet(minGross, minBasis);
         acceptableIncomeMinAnnualNet = Number.isFinite(annualNet) ? Math.max(annualNet, 0) : null;
       } else {
         acceptableIncomeMinAnnualNet = null;
       }
 
-      const maxGross = getLockedAcceptableIncomeGross('max');
+      const { value: maxGross, basis: maxBasis } = getLockedAcceptableIncomeGross('max');
       if (Number.isFinite(maxGross)) {
-        const annualNet = convertGrossBasisToAnnualNet(maxGross);
+        const annualNet = convertGrossBasisToAnnualNet(maxGross, maxBasis);
         acceptableIncomeMaxAnnualNet = Number.isFinite(annualNet) ? Math.max(annualNet, 0) : null;
       } else {
         acceptableIncomeMaxAnnualNet = null;
@@ -3844,7 +3880,7 @@
           ? parsed
           : convertNetToGross(parsed, taxRate);
         if (Number.isFinite(grossForStore)) {
-          setLockedAcceptableIncomeGross(type, Math.max(grossForStore, 0));
+          setLockedAcceptableIncomeGross(type, Math.max(grossForStore, 0), acceptableIncomeBasis);
         } else {
           setLockedAcceptableIncomeGross(type, null);
         }
@@ -4538,6 +4574,7 @@
       const vatRate = Math.max(parseNumber(controls.vatRate.value, 21), 0) / 100;
       const classesPerWeek = parseList(controls.classesPerWeek.value);
       const studentsPerClass = parseList(controls.studentsPerClass.value);
+      const hoursPerLesson = Math.max(parseNumber(controls.hoursPerLesson.value, 1, { min: 0.25, max: 12 }), 0.25);
       const bufferPercent = Math.max(parseNumber(controls.buffer.value, 15), 0);
       const buffer = bufferPercent / 100;
       const currencySymbol = controls.currencySymbol.value.trim() || '€';
@@ -4681,6 +4718,9 @@
         controls.variableCostPerStudentMonthly.value = formatFixed(variableCostPerStudentMonthly, 2);
       }
       controls.vatRate.value = formatFixed(vatRate * 100, 1);
+      if (controls.hoursPerLesson instanceof HTMLInputElement) {
+        controls.hoursPerLesson.value = formatFixed(hoursPerLesson, 2);
+      }
       if (controls.lessonPriceMin instanceof HTMLInputElement) {
         controls.lessonPriceMin.value =
           lessonPriceMin == null || !Number.isFinite(lessonPriceMin)
@@ -4723,6 +4763,7 @@
         vatRate,
         classesPerWeek,
         studentsPerClass,
+        hoursPerLesson,
         lessonCostInclVat,
         lessonPriceMin,
         lessonPriceMax,
@@ -4830,7 +4871,7 @@
       } else {
         variantLabel = variant === 'base'
           ? 'Base price (no buffer)'
-          : `Buffered price (+${formatFixed(latestBufferPercent, 1)}% safety margin)`;
+          : `Buffered price (+${formatFixed(latestBufferPercent, 1)}% extra safety margin)`;
       }
 
       if (breakdownVariant) {
@@ -5114,7 +5155,8 @@
         acceptableIncome: acceptableIncomeRange = null,
         desiredIncomeDisplayMode: incomeDisplayMode = 'net',
         taxRate: incomeTaxRate = 0,
-        activeMonths: incomeActiveMonths = MONTHS_PER_YEAR
+        activeMonths: incomeActiveMonths = MONTHS_PER_YEAR,
+        hoursPerLesson: lessonHours = 1
       } = options;
       const formattedBuffer = formatFixed(bufferPercent, 1);
       const showBasePricesActive = mode === PRICING_MODE_TARGET && showBase;
@@ -5156,6 +5198,32 @@
         return false;
       };
 
+      const normalizedLessonHours = Number.isFinite(lessonHours) && lessonHours > 0 ? lessonHours : null;
+      const hourlyRateLabel = incomeDisplayMode === 'gross' ? 'Hourly gross' : 'Hourly net';
+
+      const computeHourlyRate = breakdown => {
+        if (!normalizedLessonHours) {
+          return null;
+        }
+        const netPerLesson = breakdown?.perLesson?.netIncome;
+        if (!Number.isFinite(netPerLesson)) {
+          return null;
+        }
+        const lessonValue = incomeDisplayMode === 'gross'
+          ? convertNetToGross(netPerLesson, incomeTaxRate)
+          : netPerLesson;
+        if (!Number.isFinite(lessonValue)) {
+          return null;
+        }
+        const perHour = lessonValue / normalizedLessonHours;
+        return Number.isFinite(perHour) ? perHour : null;
+      };
+
+      const formatHourlyRateDisplay = breakdown => {
+        const rate = computeHourlyRate(breakdown);
+        return Number.isFinite(rate) ? formatCurrency(symbol, rate) : '—';
+      };
+
       const toggleMarkup = mode === PRICING_MODE_TARGET
         ? `<div class="price-toggle-row">
             <button type="button" class="price-reveal-toggle secondary" aria-expanded="${showBasePricesActive}">
@@ -5179,6 +5247,8 @@
                 const annualDisplay = formatIncomeForDisplay(col.manualNet.annual);
                 const bufferedMonthlyDisplay = formatIncomeForDisplay(col.manualNet.bufferedMonthly);
                 const bufferedAnnualDisplay = formatIncomeForDisplay(col.manualNet.bufferedAnnual);
+                const bufferedHourlyDisplay = formatHourlyRateDisplay(col.buffered.breakdown);
+                const baseHourlyDisplay = formatHourlyRateDisplay(col.base.breakdown);
 
                 const highlightBase = shouldHighlightIncome(
                   { monthlyNet: col.manualNet.monthly, annualNet: col.manualNet.annual },
@@ -5220,6 +5290,7 @@
                       <span class="price-label">${monthlyIncomeLabel}</span>
                       <strong>${monthlyDisplay}</strong>
                       <span class="price-secondary">${annualIncomeLabel} ${annualDisplay}</span>
+                      <span class="price-tertiary">${hourlyRateLabel} ${baseHourlyDisplay}</span>
                     </button>
                     <button
                       type="button"
@@ -5231,6 +5302,7 @@
                       <span class="price-label">${monthlyIncomeLabel} with ${formattedBuffer}% shortfall</span>
                       <strong>${bufferedMonthlyDisplay}</strong>
                       <span class="price-secondary">${annualIncomeLabel} ${bufferedAnnualDisplay}</span>
+                      <span class="price-tertiary">${hourlyRateLabel} ${bufferedHourlyDisplay}</span>
                     </button>
                   </div>
                 </td>
@@ -5279,6 +5351,8 @@
               const baseButtonClass = baseClasses.join(' ');
               const bufferedAnnualIncomeDisplay = formatIncomeForDisplay(col.buffered.annualNet);
               const baseAnnualIncomeDisplay = formatIncomeForDisplay(col.base.annualNet);
+              const bufferedHourlyDisplay = formatHourlyRateDisplay(col.buffered.breakdown);
+              const baseHourlyDisplay = formatHourlyRateDisplay(col.base.breakdown);
               const bufferedValueClass = bufferedOutOfRange
                 ? 'price-value price-value--out-of-range'
                 : 'price-value';
@@ -5298,6 +5372,7 @@
                     <strong class="${bufferedValueClass}">${bufferedInclVat}</strong>
                     <span class="price-secondary">${annualIncomeLabel} ${bufferedAnnualIncomeDisplay}</span>
                     <span class="price-secondary">ex VAT ${bufferedExVat}</span>
+                    <span class="price-tertiary">${hourlyRateLabel} ${bufferedHourlyDisplay}</span>
                   </button>
                   <button
                     type="button"
@@ -5311,6 +5386,7 @@
                     <strong class="${baseValueClass}">${baseInclVat}</strong>
                     <span class="price-secondary">${annualIncomeLabel} ${baseAnnualIncomeDisplay}</span>
                     <span class="price-secondary">ex VAT ${baseExVat}</span>
+                    <span class="price-tertiary">${hourlyRateLabel} ${baseHourlyDisplay}</span>
                   </button>
                 </td>
               `;
@@ -5324,7 +5400,7 @@
         <div class="${cardClasses.join(' ')}">
           ${toggleMarkup}
           <table>
-            <caption>Per-student pricing (includes optional safety margin)</caption>
+            <caption>Per-student pricing (includes optional extra safety margin)</caption>
             <thead>
               <tr>
                 <th scope="col">Students / class</th>
@@ -5429,6 +5505,7 @@
         vatRate,
         classesPerWeek,
         studentsPerClass,
+        hoursPerLesson,
         workingWeeks,
         buffer,
         bufferPercent,
@@ -5800,7 +5877,8 @@
           },
           desiredIncomeDisplayMode,
           taxRate: inputs.taxRate,
-          activeMonths: inputs.activeMonths
+          activeMonths: inputs.activeMonths,
+          hoursPerLesson: inputs.hoursPerLesson
         });
         const targetsTable = mode === PRICING_MODE_LESSON
           ? ''
@@ -5844,6 +5922,7 @@
         vatRate,
         classesPerWeek,
         studentsPerClass,
+        hoursPerLesson,
         workingWeeks,
         bufferPercent,
         currencySymbol,
@@ -5908,7 +5987,8 @@
         `Estimated working days per year: ${formatFixed(workingDaysPerYear, 2)}`,
         `Classes per week considered: ${classesPerWeek.length ? classesPerWeek.join(', ') : 'none'}`,
         `Students per class considered: ${studentsPerClass.length ? studentsPerClass.join(', ') : 'none'}`,
-        `Safety margin cushion (buffered price uses this %): ${formatFixed(bufferPercent, 1)}%`,
+        `Hours per lesson: ${formatFixed(hoursPerLesson, 2)}`,
+        `Extra safety margin (% on top of desired income): ${formatFixed(bufferPercent, 1)}%`,
         `VAT/BTW rate: ${formatFixed(vatRate * 100, 1)}%`,
         `Currency symbol: ${currencySymbol}`,
         `Prices are rounded to whole currency units for display and CSV export.`
