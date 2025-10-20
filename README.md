@@ -4,6 +4,13 @@ Something for working out costs and income.
 ## Progressive Web App support
 The calculator now exposes a web app manifest and service worker so it can be installed on supported devices and keep working offline. Static assets and core pages are precached, and subsequent navigation attempts fall back to the cached calculator when the network is unavailable.
 
+## Asset structure
+
+- Global layout and component styling now lives in `styles/main.css`, while the resources page has its own lighter-weight rules in `styles/resources.css`.
+- The main calculator logic runs from the ES module entry `js/app.js`, which boots the legacy inline script ported into `js/calculator.js`.
+- Theme persistence for both pages is handled by `js/theme.js`, a small helper that applies the saved dark or light mode before the rest of the UI initializes.
+- Each HTML page injects a `<base>` element at runtime so relative stylesheet and script URLs resolve even when the site loads without a trailing slash (a common GitHub Pages preview edge case).
+
 ## Deployment options
 This repository publishes the static site defined in `index.html` to
 GitHub Pages using the **Pages (prod + previews)** workflow in
