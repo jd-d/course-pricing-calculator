@@ -208,6 +208,21 @@ jobs:
                   if (response.ok) {
                     core.info(`Attempt ${attempt}: preview responded with status ${response.status}.`);
                     ready = true;
+                    const readyBody = marker
+                      ? `${marker}\n\uD83D\uDD0D Preview ready: ${url}`
+                      : `\uD83D\uDD0D Preview ready: ${url}`;
+                    try {
+                      await github.rest.issues.updateComment({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        comment_id: Number(commentId),
+                        body: readyBody
+                      });
+                      core.info('Preview comment updated to ready state.');
+                    } catch (updateError) {
+                      const message = updateError?.message || String(updateError);
+                      core.warning(`Failed to update preview comment when ready: ${message}`);
+                    }
                     break;
                   }
                   core.info(`Attempt ${attempt}: preview responded with status ${response.status}.`);
