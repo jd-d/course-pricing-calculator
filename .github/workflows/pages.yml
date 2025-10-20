@@ -9,6 +9,10 @@ on:
     branches:
       - main
       - work
+  pull_request_target:
+    branches:
+      - main
+      - work
   workflow_dispatch:
 
 concurrency:
@@ -24,7 +28,17 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        if: github.event_name != 'pull_request_target'
+        uses: actions/checkout@v4
+
+      - name: Checkout pull request head
+        if: github.event_name == 'pull_request_target'
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Prepare site content
         run: |
@@ -65,12 +79,23 @@ jobs:
 
   deploy_preview:
     needs: build
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        if: github.event_name != 'pull_request_target'
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Checkout pull request head
+        if: github.event_name == 'pull_request_target'
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - id: pr
         run: echo "dir=previews/pr-${{ github.event.number }}" >> "$GITHUB_OUTPUT"
