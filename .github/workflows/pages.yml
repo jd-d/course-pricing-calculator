@@ -177,6 +177,19 @@ jobs:
             let published = false;
             let lastError = '';
 
+            const finalize = ({ bodyLine, lastErrorMessage }) => {
+              const finalBody = marker ? `${marker}\n${bodyLine}` : bodyLine;
+
+              core.setOutput('comment-id', commentId);
+              core.setOutput('final-body', finalBody);
+              core.setOutput('ready', ready ? 'true' : 'false');
+              core.setOutput('published', published ? 'true' : 'false');
+              core.setOutput('attempts', String(attempts));
+              if (lastErrorMessage) {
+                core.setOutput('last-error', lastErrorMessage);
+              }
+            };
+
             for (let attempt = 1; attempt <= maxAttempts; attempt++) {
               attempts = attempt;
               let contentReady = false;
@@ -221,9 +234,12 @@ jobs:
                       core.info('Preview comment updated to ready state.');
                     } catch (updateError) {
                       const message = updateError?.message || String(updateError);
+                      lastError = message;
                       core.warning(`Failed to update preview comment when ready: ${message}`);
                     }
-                    break;
+
+                    finalize({ bodyLine: `\uD83D\uDD0D Preview ready: ${url}`, lastErrorMessage: lastError });
+                    return;
                   }
                   core.info(`Attempt ${attempt}: preview responded with status ${response.status}.`);
                 } catch (fetchError) {
@@ -250,16 +266,7 @@ jobs:
               core.warning(`Preview was not ready after ${attempts} attempt(s).`);
             }
 
-            const finalBody = marker ? `${marker}\n${bodyLine}` : bodyLine;
-
-            core.setOutput('comment-id', commentId);
-            core.setOutput('final-body', finalBody);
-            core.setOutput('ready', ready ? 'true' : 'false');
-            core.setOutput('published', published ? 'true' : 'false');
-            core.setOutput('attempts', String(attempts));
-            if (lastError) {
-              core.setOutput('last-error', lastError);
-            }
+            finalize({ bodyLine, lastErrorMessage: lastError });
 
       - name: Update preview comment with final status
         if: always()
