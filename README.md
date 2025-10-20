@@ -28,3 +28,11 @@ optionally `pull-requests: write`) to keep that automation functioning.
 ### Preview cleanup
 Preview directories are removed automatically when a pull request
 closes, courtesy of `.github/workflows/cleanup-preview.yml`.
+
+## Manual regression test
+
+Use these steps to confirm acceptable-income persistence treats blank maximums as an open range.
+
+1. Load the calculator and enable the **Remember my inputs** option.
+2. Set an acceptable minimum income value, leave the maximum field blank, and toggle any basis if desired.
+3. Reload the page. The acceptable income inputs should show the saved minimum and an empty maximum, and the acceptable range shading should extend through the full graph to represent no upper bound.

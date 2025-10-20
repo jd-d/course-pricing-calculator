@@ -4559,10 +4559,21 @@
       if (typeof storedAcceptableBasis === 'string' && ACCEPTABLE_INCOME_BASIS_VALUES.includes(storedAcceptableBasis)) {
         acceptableIncomeBasis = storedAcceptableBasis;
       }
-      const storedAcceptableMin = Number(values[PERSISTED_ACCEPTABLE_INCOME_MIN_KEY]);
-      acceptableIncomeMinAnnualNet = Number.isFinite(storedAcceptableMin) ? storedAcceptableMin : null;
-      const storedAcceptableMax = Number(values[PERSISTED_ACCEPTABLE_INCOME_MAX_KEY]);
-      acceptableIncomeMaxAnnualNet = Number.isFinite(storedAcceptableMax) ? storedAcceptableMax : null;
+      const storedAcceptableMinRaw = values[PERSISTED_ACCEPTABLE_INCOME_MIN_KEY];
+      if (storedAcceptableMinRaw === null || typeof storedAcceptableMinRaw === 'undefined') {
+        acceptableIncomeMinAnnualNet = null;
+      } else {
+        const storedAcceptableMin = Number(storedAcceptableMinRaw);
+        acceptableIncomeMinAnnualNet = Number.isFinite(storedAcceptableMin) ? storedAcceptableMin : null;
+      }
+      const storedAcceptableMaxRaw = values[PERSISTED_ACCEPTABLE_INCOME_MAX_KEY];
+      if (storedAcceptableMaxRaw === null || typeof storedAcceptableMaxRaw === 'undefined') {
+        acceptableIncomeMaxAnnualNet = null;
+      } else {
+        const storedAcceptableMax = Number(storedAcceptableMaxRaw);
+        // Only coerce persisted values when they exist so blanks reload as an open range.
+        acceptableIncomeMaxAnnualNet = Number.isFinite(storedAcceptableMax) ? storedAcceptableMax : null;
+      }
       const inputs = getPersistableInputs();
       inputs.forEach(input => {
         if (!(input instanceof HTMLInputElement) || !input.id) {
