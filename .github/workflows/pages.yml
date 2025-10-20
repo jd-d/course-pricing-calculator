@@ -2,9 +2,13 @@ name: Pages (prod + previews)
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - work
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
+      - work
   workflow_dispatch:
 
 concurrency:
