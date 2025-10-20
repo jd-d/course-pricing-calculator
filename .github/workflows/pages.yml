@@ -2,9 +2,13 @@ name: Pages (prod + previews)
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches:
+      - main
+      - work
+  pull_request_target:
+    branches:
+      - main
+      - work
   workflow_dispatch:
 
 concurrency:
@@ -20,7 +24,16 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository (push/workflow dispatch)
+        if: github.event_name != 'pull_request_target'
+        uses: actions/checkout@v4
+
+      - name: Checkout pull request head
+        if: github.event_name == 'pull_request_target'
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Prepare site content
         run: |
@@ -61,12 +74,15 @@ jobs:
 
   deploy_preview:
     needs: build
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request_target'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - id: pr
         run: echo "dir=previews/pr-${{ github.event.number }}" >> "$GITHUB_OUTPUT"
