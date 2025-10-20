@@ -1,6 +1,14 @@
 # course-pricing-calculator
 Something for working out costs and income.
 
+## Code organization
+
+- `styles/main.css` contains the global styles previously embedded directly in `index.html`.
+- `js/dom.js` centralizes DOM lookups so other modules share the same references.
+- `js/ui.js` provides shared UI helpers (theme handling, info tooltips, dialog locking) and exports an `initUi` bootstrap.
+- `js/state.js` contains the calculator state, persistence, and rendering logic now exported as an `initCalculator` function.
+- `js/app.js` loads the UI modules with `<script type="module">` and coordinates initialization.
+
 ## Progressive Web App support
 The calculator now exposes a web app manifest and service worker so it can be installed on supported devices and keep working offline. Static assets and core pages are precached, and subsequent navigation attempts fall back to the cached calculator when the network is unavailable.
 
