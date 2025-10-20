@@ -1,5 +1,3 @@
-import { initUi } from './ui.js';
-import { initCalculator } from './state.js';
+import { initCalculator } from './calculator.js';
 
-initUi();
 initCalculator();

@@ -8,10 +8,10 @@ const PRECACHE_URLS = [
   './manifest.webmanifest',
   './pwa.js',
   './styles/main.css',
+  './styles/resources.css',
   './js/app.js',
-  './js/state.js',
-  './js/ui.js',
-  './js/dom.js',
+  './js/calculator.js',
+  './js/theme.js',
   './assets/favicon.png'
 ];
 
