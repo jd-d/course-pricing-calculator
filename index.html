@@ -175,6 +175,8 @@
       display: flex;
       flex-direction: column;
       transition: background 0.4s ease, color 0.4s ease;
+      overflow-x: hidden;
+      touch-action: pan-y;
     }
 
     body.dialog-open {
@@ -1795,6 +1797,18 @@
 
     .tables .card {
       min-height: 100%;
+      overflow: visible;
+    }
+
+    .card-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-x;
+    }
+
+    .card-scroll table {
+      min-width: 100%;
+      width: max-content;
     }
 
     ul.assumptions {
@@ -6449,18 +6463,20 @@
       return `
         <div class="${cardClasses.join(' ')}">
           ${toggleMarkup}
-          <table>
-            <caption>Per-student pricing (includes optional extra safety margin)</caption>
-            <thead>
-              <tr>
-                <th scope="col">Students / class</th>
-                ${columnHeaders}
-              </tr>
-            </thead>
-            <tbody>
-              ${rowsHtml}
-            </tbody>
-          </table>
+          <div class="card-scroll">
+            <table>
+              <caption>Per-student pricing (includes optional extra safety margin)</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Students / class</th>
+                  ${columnHeaders}
+                </tr>
+              </thead>
+              <tbody>
+                ${rowsHtml}
+              </tbody>
+            </table>
+          </div>
         </div>
       `;
     }
@@ -6517,29 +6533,31 @@
 
       return `
         <div class="card">
-          <table>
-            <caption>
-              Gross Revenue Needed To Achieve Net Income Targets
-              <span
-                class="info-icon"
-                tabindex="0"
-                role="button"
-                aria-expanded="false"
-                aria-label="“Active” periods exclude the time you planned off (months, weeks, and days away from teaching)."
-                data-tooltip="“Active” periods exclude the time you planned off (months, weeks, and days away from teaching)."
-              >ℹ️</span>
-            </caption>
-            <thead>
-              <tr>
-                <th scope="col">Target</th>
-                <th scope="col">Revenue needed</th>
-                <th scope="col">Basis</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rows}
-            </tbody>
-          </table>
+          <div class="card-scroll">
+            <table>
+              <caption>
+                Gross Revenue Needed To Achieve Net Income Targets
+                <span
+                  class="info-icon"
+                  tabindex="0"
+                  role="button"
+                  aria-expanded="false"
+                  aria-label="“Active” periods exclude the time you planned off (months, weeks, and days away from teaching)."
+                  data-tooltip="“Active” periods exclude the time you planned off (months, weeks, and days away from teaching)."
+                >ℹ️</span>
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Target</th>
+                  <th scope="col">Revenue needed</th>
+                  <th scope="col">Basis</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows}
+              </tbody>
+            </table>
+          </div>
         </div>
       `;
     }
