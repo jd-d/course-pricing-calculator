@@ -6,6 +6,37 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0, viewport-fit=cover"
   />
+  <script>
+    (function () {
+      var head = document.head;
+      if (!head || head.querySelector('base')) {
+        return;
+      }
+
+      var pathname = window.location.pathname || '/';
+      var hasTrailingSlash = pathname.endsWith('/');
+      var lastSegment = pathname.substring(pathname.lastIndexOf('/') + 1);
+      var looksLikeFile = lastSegment.indexOf('.') !== -1;
+      var basePath;
+
+      if (looksLikeFile) {
+        basePath = pathname.slice(0, pathname.lastIndexOf('/') + 1);
+      } else if (hasTrailingSlash) {
+        basePath = pathname;
+      } else {
+        basePath = pathname + '/';
+      }
+
+      if (!basePath) {
+        basePath = '/';
+      }
+
+      var base = document.createElement('base');
+      base.href = basePath;
+      head.insertBefore(base, document.currentScript);
+      window.__CPC_ASSET_BASE__ = base.href;
+    })();
+  </script>
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#0a0c12" />
